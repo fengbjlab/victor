@@ -8,4 +8,4 @@ VICTOR = variant interpretation for clinical testing or research
 * muParser(2.2.3)	http://muparser.beltoforion.de
 * boost(1.58.0)		http://www.boost.org
 * STL+(3-03-08)		http://stlplus.sourceforge.net
-* TFT(2019-Jan-03)	http://fengbjlab.org
+* TFT(2019-Jan-03)	https://github.com/fengbjlab/libTFT
