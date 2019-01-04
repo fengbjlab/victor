@@ -1,7 +1,7 @@
 # victor
 VICTOR = variant interpretation for clinical testing or research
 
-### Required libraries (version) and URL
+### Required libraries (version) and their URL
 
 * bzip2(1.0.6)		http://bzip.org
 * zlib(1.2.8)		http://zlib.net
