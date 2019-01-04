@@ -1,0 +1,46 @@
+PURPOSE : __PRTXTFMT_HANGING__10 annotate functional consequences, which include _Default_func_type
+USAGE   : __PROGRAM_NAME__ [VariantFile] [options] > modified_VariantFile
+OPTIONS : __PRTXTFMT_HANGING__19
+
+<><><><><><><>
+ Input Files
+<><><><><><><>
+
+ --pav FILE,D,S,B  Get pre-annotated variant from FILE with the cutoff Score>=D for functional consequence S and LoF B {_Default_pav}. You can use this option for multiple times. Use --pav+=F,D,S,B to add, --pav=F,D,S,B to assign, and --pav= to clear. The format of FILE is 6 columns for CHR, POS, REF, ALT, Score and GeneSymbol, respectively. Header row is allowed. Positions are 1-based.
+ --pas FILE,D,S,B  Get pre-annotated site from FILE with the cutoff Score>=D for functional consequence S and LoF B {_Default_pas}. You can use this option for multiple times. Use --pas+=F,D,S,B to add, --pas=F,D,S,B to assign, and --pas= to clear. The format of FILE is 5 columns with a header row #TxID xxx_begin xxx_end Annotation Score. Here xxx could be "DNA" for genomic location, "RNA" for nucleotide position relative to the transcription start site, "CDS" for nucleotide position relative to the translation start site, "AA" for amino acid position, "UTR3" for nucleotide position relative to the begin of UTR3, or "DOWN" for nucleotide position relative to the transcription end site. All positions are 1-based. For RNA, negative position is allowed, which means upstream.
+ --par FILEs       Get pre-annotated region from FILEs {_Default_par}. File format: Chr Start End RegionType. End is 1-based, while Start is 0-based.
+ --vks FILE        Get variant of known significance (VKS) from FILE. The Functional Consequence Type field annotated by __PROGRAM_NAME__ will label variants with (knClinSig=#.$) whenever applicable, where # is '1' for pathogenic and '0' for benign, $ is 'a' for genomic match, 'b' for protein sequence match, and 'c' for missense substitution of the same amino acid position as a VKS but to a different amino acid, and the BayesDel score is higher than the minimum score among pathogenic VKS or lower than the maximum score among benign VKS. If the clinical significance cannot be determined, the label will be (knClinSig=uncertain). By default it uses BayesDel rather than Grantham or Blosum62 as an index of substitution severity because it doesn't lead to any conflicting scores in ClinVar. FILE has 9 columns: #CHROM,POS,REF,ALT,Symbol,Type,HGVS,BayesDel,ClinSig. An HGVS example is NM_000546:c.188C>T:p.A63V. ClinSig should be either 1 for pathogenic or 0 for benign. Type is the functional consequence of the variant. It should start with "Missense" for missense changes. BayesDel is BayesDel score. {_Default_known}
+ --prefer FILEs    Get preferred gene symbols from FILE. Preferred genes are the likely disease-causing ones among the overlapping genes. An example is --prefer=panel_incidental {_Default_prefer}
+
+<><><><><><><><><><><>
+ Annotation Controls
+<><><><><><><><><><><>
+
+ --splice-5e I     Boundary of 5' splice site in exon   (<=0, 0 to ignore) {_Default_splice_5e}
+ --splice-5i I     Boundary of 5' splice site in intron (>=0, 0 to ignore) {_Default_splice_5i}
+ --splice-3i I     Boundary of 3' splice site in intron (<=0, 0 to ignore) {_Default_splice_3i}
+ --splice-3e I     Boundary of 3' splice site in exon   (>=0, 0 to ignore) {_Default_splice_3e}
+ --up I            Boundary of upstream region in basepairs (>=0) {_Default_up}
+ --dn I            Boundary of downstream region in basepairs (>=0) {_Default_dn}
+ --canonical B     Annotate canonical transcripts only (the Tx with the longest CDS or mRNA) {_Default_canonical}
+ --sv B            Annotate structural variations {_Default_sv}
+ --gene-file FILE  Annotate against gene symbols listed in FILE only {_Default_gene_fn}
+ --tx-file FILE    Annotate against tanscripts listed in FILE only {_Default_tx_fn}
+
+<><><><><><><><><>
+ Output Controls
+<><><><><><><><><>
+
+ --filter STRs     Filter out variants whose functional consequence is one of the STRs (_Default_func_type, coding, noncoding) unless labeled as LoF, TrEff or by --par {_Default_filter}
+ --filt-benign B   Filter out known benign variants annotated from --vks {_Default_filt_benign}
+ --no-filter B     Do not filter variants (equal to --filter= --filt-benign=no) {_Default_no_filter}
+ --no-split B      Do not split overlapping genes into multiple lines. Output sorted by Chr,Pos,Ref,Alt. {_Default_no_split}
+ --norm-only B     Do not do annotation, just left-normalize POS,REF,ALT. Output sorted by Chr,Pos,Ref,Alt. {_Default_LNonly}
+ --no-nmd B        Label Nonsense-mediated mRNA decay (NMD) variants as (LoF), otherwise (NMD) {_Default_no_nmd}
+ --allSpliceLoF B  All SpliceSite variants are LoF, even if there is an alternative Tx where it is not LoF. {_Default_allSpliceLoF}
+ --one-lett B      HGVS use one letter amino acid code {_Default_one_lett}
+ --ter C           HGVS code for termination (recommend *, some people use X) {_Default_ter_lett}
+ --unique B        Use unique gene symbols (GeneSymbol_CHR_POS) {_Default_unique}
+ --add-info B      Write annotation to the INFO field instead of adding a new column {_Default_add_info}
+ --log FILE        Output to FILE the variants that were filtered out by --filter {_Default_out_log}
+ --rm-big-indel I  Remove InDels whose size is > I {_Default_rm_big_indel}

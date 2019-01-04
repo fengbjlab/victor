@@ -1,0 +1,12 @@
+PURPOSE : __PRTXTFMT_HANGING__10 filter variant after a PERCH analysis
+USAGE   : __PROGRAM_NAME__ $OUT.results_varRank [options] > remaining_variants
+OPTIONS : __PRTXTFMT_HANGING__19
+ --lof-only B       filter out non-LoF variants or LoF variants in LoF-tolerated genes {_Default_lof_only}
+ --detail F         filter out variant if another variant in F is observed for I+ times (--filt-obs=I) (F=$OUT.results_detail) {_Default_det}
+ --filt-obs I       filter out variant if another variant in F is observed for I+ times (--detail=F) {_Default_obs}
+ --filt-seg D       filter out variant if the co-segregation score is < D (-inf = no filtering) {_Default_seg}
+ --filt-aaa D       filter out variant if the association score is < D (-inf = no filtering) {_Default_aaa}
+ --filt-gba D       filter out variant if the GBA score is < D (-inf = no filtering) {_Default_gba}
+ --filt-del D       filter out variant if BayesDel<D (-inf = no filtering) {_Default_FltDel_hsAF if BayseDel has MaxAF, _Default_FltDel_noAF if not}
+ --gene-wise-del F  Obtain gene-specific BayesDel cutoff from file F {_Default_gene_wise_del}
+ --log F            write log file {_Default_log}

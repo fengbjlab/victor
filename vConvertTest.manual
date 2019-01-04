@@ -1,0 +1,16 @@
+PURPOSE : create files for variant classification by PERCH
+USAGE   : __PROGRAM_NAME__ [OPTIONs]
+OUTPUT  : prefix.ped prefix.vcf (therefore --prefix is important)
+OPTIONS : __PRTXTFMT_HANGING__19
+ --ped FILE        Pedigree File (pre- or post-makeped LINKAGE format, or has headers: PedID IndID Father Mother Sex Aff Age Genotype) {_Default_ped}
+ --boadicea B      The Pedigree File is obtained from the BOADICEA web tool * {_Default_boadicea}
+ --gene STR        Gene symbol {_Default_gene}
+ --chr STR         Chrmosome (mandatory) {_Default_chr}
+ --pos STR         Genomic position (mandatory) {_Default_pos}
+ --ref STR         Reference sequence (mandatory) {_Default_ref}
+ --alt STR         Alternative sequence (mandatory) {_Default_alt}
+ --age DBLs        Age group cutoffs (small to large) {_Default_age}
+ --unk-sex INT     Sex of persons with an unknown sex {_Default_unk_sex}
+ --unk-aff DBL     Aff of persons with an unknown affection status {_Default_unk_aff}
+ --unk-age DBL     Age of cases with an unknown age {_Default_unk_age}
+* __PROGRAM_NAME__ will reject this option if the second column is not Name or the fourth column is not IndivID.

@@ -1,0 +1,3 @@
+PURPOSE : Phase a VCF based on ShapeIt max output
+USAGE   : __PROGRAM_NAME__ <ShapeIt.phased.haps> <ShapeIt.input.vcf> > phased_VCF
+OPTIONS : __PRTXTFMT_HANGING__19

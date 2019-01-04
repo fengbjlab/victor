@@ -1,0 +1,118 @@
+PURPOSE : perform rare-variant association analysis
+USAGE   : __PROGRAM_NAME__ [Variant_File(annotated VCF w/o genotypes)] [options] > modified_Variant_File
+OPTIONS : __PRTXTFMT_HANGING__19
+
+INPUTS
+
+--gtp F            Read Genotype_File (can be a template with @ to represent a chromosome) {_Default_gtp}
+--spl F            Read Sample_File F {_Default_sample_file}
+--ped F            Read trios (affected child unaffected parents, all sequenced) from file F (6 column LINKAGE format) {_Default_ped}
+--weight F         Read individual weight from file F (two columns: SeqID weight) {_Default_iwt_fn}
+--sv Fs            Read structural variation data from files Fs (output of vSVA --detail) {_Default_sv}
+--rm-ind Fs        Remove samples listed in file(s) Fs {_Default_rm_ind}
+--group Ss         In input, header of group columns {_Default_groups}
+--example-chr S    An example chromosome ID for the filename template set by --gtp {_Default_example_chr}
+--ok-no-match B    Skip the variant in Variant_File that has no match in Genotype_File; otherwise, report error and exit {_Default_ok_no_match}
+
+FILTERS
+
+--include FILEs    Restrict analysis to regions     in FILEs. Use 2+ files to define intersection. {_Default_include}
+--exclude FILEs    Restrict analysis to regions not in FILEs. Use 2+ files to define union. {_Default_exclude}
+--mhc-only B       Restrict analysis to the MHC region. {_Default_mhc_only}
+--no-mhc B         Restrict analysis to non-MHC regions. {_Default_no_mhc}
+--snv-only B       Restrict analysis to single-nucleotide variants only {_Default_snv_only}
+--lof-only B       Restrict analysis to loss-of-function variants only, BayesDel still applies {_Default_lof_only}
+--lof-no-del B     Restrict analysis to loss-of-function variants only, BayesDel not considered {no}
+--lof-tol F        Exclude LoF-tolerated genes in file F when --lof-only=yes {_Default_lof_tol}
+--filt-miss-rate D Exclude variants if missing rate in samples (cases+controls) is > D (1 = no filtering) {_Default_filt_miss_t}
+--filt-miss-pv D   Exclude variants if missing rate difference between cases and controls has a p-value <= D (0 = no filtering) {_Default_filt_miss_d}
+--filt-MaxAF D     Exclude variants if MaxAF >D (0  = no filtering) {_Default_filt_MaxAF}
+--filt-SplAF D     Exclude variants if SplAF >D (0  = no filtering) {_Default_filt_SplAF}
+--filt-FdrAF D     Exclude variants if AF_Founder >D (0  = no filtering) if AN_Founder>=_Default_minAN {_Default_filt_FdrAF}
+--filt-vqs-snv D   Exclude variants if VQSLOD<D (-inf = no filtering) for SNVs {_Default_filt_VQS_SNV}
+--filt-vqs-indel D Exclude variants if VQSLOD<D (-inf = no filtering) for InDels {_Default_filt_VQS_InDel}
+--filt-del D       Exclude variants if BayesDel<D (-inf = no filtering) {_Default_FltDel_hsAF if BayseDel has MaxAF, _Default_FltDel_noAF if not}
+--filt-filter Ss   Exclude variants if FILTER is not one of Ss {_Default_filt_FILTER}
+--filt-QD D        Exclude variants if QD (Qual. By Depth.) < D (0 = no filtering, GATK default = 2)  {_Default_filt_QD}
+--filt-MQ D        Exclude variants if MQ (Mapping Quality) < D (0 = no filtering, GATK default = 40) {_Default_filt_MQ}
+--filt-FS D        Exclude variants if FS (Fisher Strand)   > D (0 = no filtering, GATK default = 60) {_Default_filt_FS}
+--filt-HS D        Exclude variants if HaplotypeScore       > D (0 = no filtering, GATK default = 13) {_Default_filt_HS}
+--filt-MR D        Exclude variants if MQRankSum            < D (0 = no filtering, GATK default = -12.5) {_Default_filt_MR}
+--filt-RP D        Exclude variants if ReadPosRankSum       < D (0 = no filtering, GATK default = -8) {_Default_filt_RP}
+--filt-dn I        Exclude variants if there are more than I de novo mutations (0 = no filtering) {_Default_DN_max}
+--rm-mac-ge I      Exclude variants if minor allele count  >= I (0 = no filtering) {_Default_mac_ge}
+--hard-filter B    Hard filtering by QD,MQ,FS,HS,MR,RP. Will populate thresholds with GATK defaults if not set. {_Default_hard_filter}
+--de-novo I        Restrict analysis to genes with at least I de novo mutations. You also need to set --ped. {_Default_de_novo}
+--dn-only B        Read only de novo genotypes for trios (this option does not affect non-trios) {_Default_DNonly}
+--filt-sv D        Exclude the structural variations if the sample frequency is > D (0 = no filtering) {_Default_filt_sv}
+--gene-wise-del F  Obtain gene-specific BayesDel cutoff from file F {_Default_gene_wise_del}
+
+PARAMETERS
+
+--var-wt B         Apply variant weights combining BayesDel and VQSLOD {_Default_var_wt}
+--single B         Single-variant analysis {_Default_single}
+
+ANALYSIS
+
+Method 1:
+--FET              Do Fisher's exact test (THIS_IS_THE_DEFAULT)
+--one-sided        perform one-sided test {_Default_1sided}
+--min-cohort I     minimum number of cases or controls in each stratum {_Default_min_cohort}
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+
+Method 2:
+--linear           Do linear regression
+--one-sided        perform one-sided test {_Default_1sided}
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+--trend B          trend test, otherwise model test based on penetrance {_Default_trend}
+
+Method 3:
+--logistic         Do Firth's penalized logistic regression
+--one-sided        perform one-sided test {_Default_1sided}
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+--trend B          trend test, otherwise model test based on penetrance {_Default_trend}
+--flr-R F          use customized R code to do logistf and writes MyR_pval {_Default_my_R}
+
+Method 4:
+--ranksum          Do Wilcoxon rank sum test
+--one-sided        perform one-sided test {_Default_1sided}
+--min-sample I     minimum sample size in each stratum {_Default_min_sample}
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+--trend B          trend test, otherwise model test based on penetrance {_Default_trend}
+
+Method 5:
+--HLR              Do haplotype likelihood ratio analysis
+--penetrance D,D,D penetrance of causal variant {_Default_penetrance}
+--prevalence D     prevalence of the disease {_Default_prevalence}
+--phenocopy D      phenocopy rate (the proportion of affected individuals that do not carry any pathogenic variants in a gene) {_Default_phenocopy}
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+
+Method 6:
+--SSUw             Do Sum Squared U test, original weights
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+
+Method 7:
+--vc               Do variant classification
+
+Method 8:
+--collapse         Show a collapsed haplotype summary and an odds ratio for each gene.
+
+Method 9:
+--detail           Show a genotype summary for each variant.
+--show-id          Show the IDs of samples with an RC/RR genotype (R=rare C=common).
+--show-gt          Show all genotype information include DP, GQ, etc. from the original VCF.
+--show-if          Show all genotype information include DP, GQ, etc. from the original VCF, but limit to incidental findings.
+
+Method 10:
+--xct-pfx S1,S2,S3 Compare cases to external controls, such as ExAC. S1: ExAC file prefix; S2: cases' qc.log file prefix; S3: cases' coverage file prefix. {}
+--xct-pop S        Compare to which ExAC population (Adj,AFR,AMR,EAS,FIN,NFE,SAS,MALE,FEMALE) {_Default_xct_pop}
+--xct-log F        Write log to F {_Default_xct_log}
+
+Method 11:
+--write            Write data
+--trend B          trend test, otherwise model test based on penetrance {_Default_trend}
+
+Method 12:
+--my-R F           Do analysis with customized R code in file F {_Default_my_R}
+--out-mlp B        Output -log10(p) instead of log10 Bayes factor {_Default_out_lp}
+--trend B          trend test, otherwise model test based on penetrance {_Default_trend}

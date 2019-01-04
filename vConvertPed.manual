@@ -1,0 +1,6 @@
+PURPOSE : __PRTXTFMT_HANGING__10 convert pedigree file from PERCH to PLINK format __PRTXTFMT_HANGING__0
+USAGE   : __PROGRAM_NAME__ --geno=input.vcf --ped=input.ped > output.ped
+OPTIONS : __PRTXTFMT_HANGING__19
+--ped FILE         input Pedigree File {_Default_ped}
+--geno FILE        input Genotype File {_Default_geno}
+--rm-ind FILEs     Remove samples listed in FILEs {_Default_rm_ind}

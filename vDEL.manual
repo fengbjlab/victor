@@ -1,0 +1,11 @@
+PURPOSE : calculate a combined deleteriousness score for each variant
+USAGE   : __PROGRAM_NAME__ [VariantFile] [options] > modified_VariantFile
+OPTIONS : __PRTXTFMT_HANGING__19
+ --wst-for STRs    If the functional consequence has any of the STRs, assign the worst  score among all possible missense variants within the gene. This applies no matter whether the combined BayesDel can be calculated. {_Default_ws_for}
+ --med-for STRs    If the functional consequence has any of the STRs, assign the median score among all possible missense variants within the gene. This applies when the combined BayesDel cannot be calculated.  {_Default_ms_for}
+ --ensemble STR    Component scores (_Candidate_ensemble) {_Default_ensemble}
+ --af Ss           Combine MaxAF with allele frequencies in these INFO fields to calculate the overall MaxAF {_Default_af}
+ --check-ms S      Check InFrame/Missense variants with a missing PROVEAN score, write the variants to file S.for_PROV {_Default_check_ms}
+ --no-sort B       Do not sort output lines (will be turned on if input is not annotated with gene symbols) {_Default_no_sort}
+ --MaxAF-no0 B     Change MaxAF=0 to MaxAF=missing, otherwise change MaxAF=missing to MaxAF=0 {_Default_MaxAF_no0}
+ --add-af B        Add MaxAF to BayesDel {_Default_add_af}

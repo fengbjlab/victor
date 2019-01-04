@@ -1,0 +1,91 @@
+PURPOSE  : quality control of a VCF file with or without genotype fields
+THIS_HELP: [Optional] <ToReplace> {DefaultValue} (Explanation)
+USAGE    : __PROGRAM_NAME__ [VariantFile] [OPTIONs]
+STDOUT   : VCF after removing bad variants, bad genotypes, and specified samples
+STDERR   : Summary of variants removed by each filter
+OPTIONs for variant-wise QC on an input VCF file : __PRTXTFMT_HANGING__19
+--spl F             Read Sample File F {_Default_sample_file}
+--ped F             Read Pedigree File F (6 column LINKAGE format with header) {_Default_ped}
+--dup F             Read duplicated samples from file F (one row per sample, no limit to the number of columns, gold std on column 1) {_Default_dup}
+--rep FILE1,FILE2   Read replication from FILE1 (2 columns: ReplicationID SeqID) and FILE2 (tabix-indexed cleaned VCF) {_Default_rep}
+--insert-dn F       Read de novo variants from file F (5 columns: Chr Pos Ref Alt SeqID) {_Default_insert_dn}
+--cohort F          Read cohort ID from file F. Cohort is a set of samples target-enriched and sequenced by the same reagent and platform. {_Default_cohort}
+--rm-ind Fs         Remove samples listed in file(s) Fs {_Default_rm_ind}
+--tot-spl I         The total number of samples sequenced (for VCF without genotypes) {_Default_tot_spl}
+--rv D              Measure overall quality by counting the number of rare variants (MAF<=D) within the minimum exome regions (--min-bed F). {_Default_rv}
+--min-bed F         Measure overall quality by counting the number of rare variants (--rv D) within the minimum exome regions defined in F. {_Default_min_bed}
+--snv-only B        Output variants restrict to SNV only {_Default_snv_only}
+--indel-only B      Output variants restrict to InDel only {_Default_indel_only}
+--skip-sv B         Output variants restrict to non-structural variations {_Default_skip_sv}
+--auto-chr B        Output variants restrict to autosomal chromosomes {_Default_auto_chr}
+--include FILEs     Output variants restrict to regions     in FILEs. Use 2+ files to define intersection. {_Default_include}
+--exclude FILEs     Output variants restrict to regions not in FILEs. Use 2+ files to define union. {_Default_exclude}
+--mhc-only B        Output variants restrict to the MHC region. {_Default_mhc_only}
+--no-mhc B          Output variants restrict to non-MHC regions. {_Default_no_mhc}
+--rm-var B          Remove variants from output if not passing one of the below filters (--filt-xxx) {_Default_rm_var}
+--filt-QD D         Exclude variants if QD (Qual. by Depth.) < D (0 = no filtering, GATK default = 2)  {_Default_filt_QD}
+--filt-MQ D         Exclude variants if MQ (Mapping Quality) < D (0 = no filtering, GATK default = 40) {_Default_filt_MQ}
+--filt-FS D         Exclude variants if FS (Fisher Strand)   > D (0 = no filtering, GATK default = 60) {_Default_filt_FS}
+--filt-HS D         Exclude variants if HaplotypeScore       > D (0 = no filtering, GATK default = 13) {_Default_filt_HS}
+--filt-MR D         Exclude variants if MQRankSum            < D (0 = no filtering, GATK default = -12.5) {_Default_filt_MR}
+--filt-RP D         Exclude variants if ReadPosRankSum       < D (0 = no filtering, GATK default = -8) {_Default_filt_RP}
+--filt-impute2 D    Exclude variants if IMPUTE2 INFO score   < D (0 = no filtering) {_Default_filt_i2info}
+--hard-filter B     Hard filtering by QD,MQ,FS,HS,MR,RP. Will populate thresholds with GATK defaults. {_Default_hard_filter}
+--HardFiltIfNoVQ B  Hard filtering by QD,MQ,FS,HS,MR,RP if there's no VQSLOD. Will populate thresholds with GATK defaults. {_Default_hardft_novq}
+--filt-vqs-nan B    Exclude variants if VQSLOD is missing {_Default_vqs_nan}
+--filt-vqs-snv D    Exclude variants if VQSLOD<D (-inf = no filtering) for SNVs {_Default_filt_VQS_SNV}
+--filt-vqs-indel D  Exclude variants if VQSLOD<D (-inf = no filtering) for InDels {_Default_filt_VQS_InDel}
+--filt-filter Ss    Exclude variants if FILTER is not one of the Ss (empty = no filtering) {_Default_filt_FILTER}
+--filt-mac I        Exclude variants if Minor Allele Count (in INFO or in all samples) is < I (0 = no filtering) {_Default_filt_mac}
+--filt-an I         Exclude variants if total allele count (in INFO or in founders) is < I (0 = no filtering) {_Default_filt_an}
+--filt-miss-rate D  Exclude variants if missing rate in sequenced samples is > D (1 = no filtering) {_Default_filt_miss_t}
+--filt-miss-pv D    Exclude variants if missing rate disparity between cases and controls has a p-value <= D (0 = no filtering) {_Default_filt_miss_d}
+--filt-discord I    Exclude variants if the number of genotype discordances among duplicated samples is >= I (0 = no filtering) {_Default_filt_discord}
+--filt-hwe-pv D     Exclude variants if Hardy-Weinberg test in controls has a p-value <= D (0 = no filtering) {_Default_filt_hwe_pv}
+--filt-hwe-info Ss  Exclude variants if Hardy-Weinberg test on AN,Het,Hom in INFO is significant (Ss has 3xN strings) {_Default_filt_hwe_info}
+--filt-obs-pv D     Exclude variants if the probability of observing data given an allele frequency is <= D (0 = no filtering) {_Default_filt_obs_pv}
+--filt-af-diff D    Exclude variants if allele frequency between cases-controls has a p-value <= D (0 = no filtering) {_Default_filt_af_diff}
+--filt-Mendelian I  Exclude variants if the number of Mendelian errors excluding de novo mutations is >= I (0 = no filtering) {_Default_Mendelian}
+--filt-de-novo I    Exclude variants if the number of de novo mutations is >= I (0 = no filtering) {_Default_de_novo}
+--filt-uo-dn I      Exclude variants if un-original de novo exist, define un-original as MAC in founders >= I (0 = no filtering) {_Default_uno_dn}
+--filt-hh D         Exclude variants if the proportion of heterozygous haploidy is >= D (0 = no filtering) {_Default_hh}
+--filt-no-var B     Exclude variants if there's no ALT allele in samples (case + control + ped + others) {_Default_filt_no_var}
+--filt-cov-DP I     Exclude variants if the proportion of cases or controls with DP>=I is <D (I=0 for no filtering) {_Default_cov_dp}
+--filt-cov-pc D     Exclude variants if the proportion of cases or controls with DP>=I is <D (D=0 for no filtering) {_Default_cov_pc}
+--filt-min-DP I     Exclude variants if the averaged DP (cs/ct) is < I (I=0 means no filtering) {_Default_min_dp}
+--filt-max-DP I     Exclude variants if the averaged DP (cs/ct) is >=I (I=0 means no filtering) {_Default_max_dp}
+--filt-obs-maf D    In the calculation of --filt-obs-pv, use a MAF cutoff D {_Default_filt_obs_cut}
+--filt-miss-ea B    In filtering by --filt-miss-rate, filter for cases-controls separately {_Default_filt_miss_ea}
+--hwe-founder B     Do HWE test among founders only {_Default_hwe_founder}
+--hwe-controls B    Do HWE test in controls if population is not defined {_Default_hwe_controls}
+--prevalence D      Prevalence of the studied trait {_Default_prevalence}
+--pv D              Change --filt-hwe-pv --filt-obs-pv --filt-miss-pv to D
+--info-func S       The INFO sub-field for "functional consequence annotations" {_Default_info_func}
+--info-ac S         The INFO sub-field for "Allele count in genotypes for the ALT allele" (for VCF without genotypes) {_Default_info_ac}
+--info-an S         The INFO sub-field for "Total number of alleles in called genotypes" (for VCF without genotypes) {_Default_info_an}
+--rm-ii-MaxAF-lt D  Remove intergenic or intronic variants if MaxAF is < D (to speed up downstream analysis, useful for WGS) {_Default_filt_AF_NG}
+--out-vqs FILE      Output to FILE the VQSLOD of variants that passed all filters except VQSLOD/HardFilters {_Default_out_vqs}
+--out-dup FILE      Output to FILE the GQ,DP of --dup/--rep samples excluding the 1st, also calculate summary statistics to stderr {_Default_out_dup}
+--out-dn FILE       Output to FILE de novo variants {_Default_out_dn}
+--sample-qc FILE    Output to FILE the statistics for sample-wise quality control {_Default_spl_qc}
+--log FILE          Output to FILE the QC filter that was applied to each removed variant {_Default_out_log}
+--y-call-numb-m I   If Y non-PAR has >=I variant calls  and >D call rate, sex is male (D set by --y-call-rate-m) {_Default_y_call_numb_m}
+--y-call-rate-m D   If Y non-PAR has >=I variant calls  and >D call rate, sex is male (I set by --y-call-numb-m) {_Default_y_call_rate_m}
+--y-total-var-f I   If Y non-PAR has >=I total variants and <D call rate, sex is female (D set by --y-call-rate-f) {_Default_y_total_var_f}
+--y-call-rate-f D   If Y non-PAR has >=I total variants and <D call rate, sex is female (I set by --y-total-var-f) {_Default_y_call_rate_f}
+--x-err-rate D      Estimated genotype error rate on chr X. If have doubts, choose the upper bound. {_Default_x_err_rate}
+--do-nothing B      Do nothing {_Default_do_nothing}
+
+OPTIONs for joining sample-wise QC outputs : __PRTXTFMT_HANGING__19
+--join-sample-qc Fs Joining sample-wise QC output file Fs. {}
+--spl F             Read Sample File F {_Default_sample_file}
+--ped F             Read Pedigree File F (6 column LINKAGE format with header) {_Default_ped}
+--rm-ind Fs         Remove samples listed in file(s) Fs {_Default_rm_ind}
+--king S            KING output prefix. Requires --spl and --prefix. {_Default_king}
+--kin-cutoff D      kinship cutoff for related individuals detection (0.35355 for MZ twin, 0.1 for 2nd degree relatives) {_Default_kin_cutoff}
+--phi-kin D         Phi and kinship cutoff for pedigree error detection {_Default_phi_kin}
+--y-call-numb-m I   If Y non-PAR has >=I variant calls  and >D call rate, sex is male (D set by --y-call-rate-m) {_Default_y_call_numb_m}
+--y-call-rate-m D   If Y non-PAR has >=I variant calls  and >D call rate, sex is male (I set by --y-call-numb-m) {_Default_y_call_rate_m}
+--y-total-var-f I   If Y non-PAR has >=I total variants and <D call rate, sex is female (D set by --y-call-rate-f) {_Default_y_total_var_f}
+--y-call-rate-f D   If Y non-PAR has >=I total variants and <D call rate, sex is female (I set by --y-total-var-f) {_Default_y_call_rate_f}
+--prefix S          Set output file prefix

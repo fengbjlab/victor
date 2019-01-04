@@ -1,0 +1,48 @@
+PURPOSE : __PRTXTFMT_HANGING__10 write a Variant Group File
+USAGE   : __PROGRAM_NAME__ [VCFs] [options] > variant_file
+CAUTION : All gene IDs should be official symbols.
+OPTIONS : __PRTXTFMT_HANGING__19
+
+FILTER VARIANTS
+
+--include FILEs    Restrict analysis to regions     in FILEs. Use 2+ files to define intersection. {_Default_include}
+--exclude FILEs    Restrict analysis to regions not in FILEs. Use 2+ files to define union. {_Default_exclude}
+--mhc-only B       Restrict analysis to the MHC region. {_Default_mhc_only}
+--no-mhc B         Restrict analysis to non-MHC regions. {_Default_no_mhc}
+--snv-only B       Restrict analysis to single-nucleotide variants only {_Default_snv_only}
+--lof-only B       Restrict analysis to loss-of-function variants only, BayesDel still applies {_Default_lof_only}
+--lof-no-del B     Restrict analysis to loss-of-function variants only, BayesDel not considered {no}
+--lof-tol F        Exclude LoF-tolerated genes in file F when --lof-only=yes {_Default_lof_tol}
+--filt-miss-rate D Exclude variants if missing rate in samples (cases+controls) is > D (1 = no filtering) {_Default_filt_miss_t}
+--filt-MaxAF D     Exclude variants if MaxAF >D (0  = no filtering) {_Default_filt_MaxAF}
+--filt-SplAF D     Exclude variants if SplAF >D (0  = no filtering) {_Default_filt_SplAF}
+--filt-FdrAF D     Exclude variants if AF_Founder >D (0  = no filtering) if AN_Founder>=_Default_minAN {_Default_filt_FdrAF}
+--filt-vqs-snv D   Exclude variants if VQSLOD<D (-inf = no filtering) for SNVs {_Default_filt_VQS_SNV}
+--filt-vqs-indel D Exclude variants if VQSLOD<D (-inf = no filtering) for InDels {_Default_filt_VQS_InDel}
+--filt-del D       Exclude variants if BayesDel<D (-inf = no filtering) {_Default_FltDel_hsAF if BayseDel has MaxAF, _Default_FltDel_noAF if not}
+--filt-mac I       Exclude variants if Minor Allele Count (in INFO or in all samples) is < I (0 = no filtering) {_Default_filt_mac}
+--gene-wise-del F  Obtain gene-specific BayesDel cutoff from file F {_Default_gene_wise_del}
+
+FILTER GENES
+
+--excl-genes Ss    exclude genes in Ss {_Default_excl_genes}
+--excl-gene-file F exclude genes in F {_Default_excl_gene_file}
+--incl-genes Ss    include only genes in Ss {_Default_incl_genes}
+--incl-gene-file F include only genes in F {_Default_incl_gene_file}
+--incl-gba-file F  include only genes with GBA score in F >= D (D set by --gba-cut) {_Default_incl_gba_file}
+
+FOR GENE SET ANALYSIS
+
+--collapse F       read the output file of "vAAA --collapse". Required if --gene-set is set. {_Default_collapse}
+--gene-set Fs      gene set files in GMT format {_Default_gene_set}
+--min-set I        minimum number of genes in a gene set {_Default_min_set}
+--max-set I        maximum number of genes in a gene set {_Default_max_set}
+--invo-genes Ss    include gene sets that have a gene in Ss {_Default_invo_genes}
+--invo-gene-file F include gene sets that have a gene in F {_Default_invo_gene_file}
+--invo-gba-file F  include gene sets that have a gene with GBA score in F >= D (D set by --gba-cut) {_Default_invo_gba_file}
+--gba-cut D        GBA score cutoff value {_Default_gba_cut}
+
+OUTPUT
+
+--restore B        vAnnGene modifies #CHROM,POS,REF,ALT for some InDels. This option restores the original values. {_Default_restore}
+--epacts B         write EPACTS group file {_Default_epacts}

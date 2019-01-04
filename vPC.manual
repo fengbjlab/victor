@@ -1,0 +1,13 @@
+PURPOSE  : select a number of principle components (PC) for adjustment
+USAGE    : __PROGRAM_NAME__ [OPTIONs] > modified_sample_file
+OPTIONs  : __PRTXTFMT_HANGING__19
+
+Run mode 1 -- calculate the number of PCs and write sample file
+--spl F             Read Sample File F {_Default_sample_file}
+--eigenval F        Read .eigenval File F output from PLINK {_Default_eigenval}
+--eigenvec F        Read .eigenvec File F output from PLINK {_Default_eigenvec}
+
+Run mode 2 -- join two sample files
+--spl F             Read Sample File F {_Default_sample_file}
+--pc F              Read Sample File F, which contains the extra columns created by __PROGRAM_NAME__ run mode 1 {_Default_pc}
+

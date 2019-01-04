@@ -1,0 +1,7 @@
+PURPOSE : select top candidate genes from multiple gene lists
+USAGE   : __PROGRAM_NAME__ [Options] INPUT(s) > OUTPUT
+INPUT(s): gene list file(s). Gene symbols are at the column 1.
+OUTPUT  : select gene list file.
+OPTIONS : __PRTXTFMT_HANGING__19
+ --must-have Ss    Include these genes {_Default_must_have}
+ --num-genes I     The number of genes to be selected {_Default_num_genes}

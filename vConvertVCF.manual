@@ -1,0 +1,26 @@
+PURPOSE : __PRTXTFMT_HANGING__10 modify VCF files to be read by PLINK 1.9. If you provide multiple VCF files, they will be concatenated. You need to provide a Pedigree File and/or a Sample File. Sequenced individuals not in these files will be dropped; individuals in these files but not in the VCF will be added; sequence IDs will be changed to <FID><delimiter><IID> for samples in the Pedigree File, or <SeqID><delimiter><SeqID> for samples in the Sample File. It will also write a PLINK .fam file to replace the one created by PLINK. __PRTXTFMT_HANGING__0
+USAGE   : __PROGRAM_NAME__ [input1.vcf [input2.vcf [..]]] [Options] | gzip -c > modified.vcf.gz
+          plink_1.9 --id-delim : --vcf modified.vcf.gz --keep plink.fam --indiv-sort file plink.fam --make-bed --out modified
+          mv __PROGRAM_NAME__.fam modified.fam
+OPTIONs : __PRTXTFMT_HANGING__19
+--ped FILE         input Pedigree File, all sequenced samples will be used {_Default_ped}
+--spl FILE         input Sample File, only cases and controls will be used {_Default_sample_file}
+--var FILE         input Variant File (.vcf/.bim/.txt), output will be restricted to matched variants only {_Default_var}
+--fam FILE         prefix of two output PLINK fam files, one with PedID=IndID (to_keep), one with original PedID (.to_repl) {_Default_fam}
+--add BOOL         add genotype columns for the samples in pedigree file that were not sequenced {_Default_add}
+--change-id BOOL   change the ID column of the input VCF file to CHR_POS_REF_ALT {_Default_change_id}
+--keep-unk BOOL    keep the samples with an unknown affection status {_Default_keep_unk}
+--id-delim STR     delimiter between PID and IID {_Default_del}
+--rm-ind FILEs     Remove samples listed in FILEs {_Default_rm_ind}
+--rev-filt-del D   Exclude variants if BayesDel>=D (inf = no filtering) {_Default_FltDel_hsAF if BayseDel has MaxAF, _Default_FltDel_noAF if not}
+--rev-filt-FdrAF D Exclude variants if AF_Founder <=D (0 = no filtering) {_Default_filt_FdrAF}
+--rev-filt-MaxAF D Exclude variants if MaxAF <=D (0 = no filtering) {_Default_filt_MaxAF}
+--filt-miss-rate D Exclude variants if missing rate is > D (1 = no filtering) {_Default_filt_miss_t}
+--filt-mac I       Exclude variants if Minor Allele Count (in INFO or in all samples) is < I (0 = no filtering) {_Default_filt_mac}
+--filt-miss-ea B   In filtering by --filt-miss-rate, filter for cases-controls separately {_Default_filt_miss_ea}
+--include FILEs    Restrict analysis to regions     in FILEs. Use 2+ files to define intersection. {_Default_include}
+--exclude FILEs    Restrict analysis to regions not in FILEs. Use 2+ files to define union. {_Default_exclude}
+--mhc-only B       Restrict analysis to the MHC region. {_Default_mhc_only}
+--no-mhc B         Restrict analysis to non-MHC regions. {_Default_no_mhc}
+--snv-only B       Restrict analysis to single-nucleotide variants only {_Default_snv_only}
+--gene-wise-del F  Obtain gene-specific BayesDel cutoff from file F {_Default_gene_wise_del}

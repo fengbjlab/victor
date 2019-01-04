@@ -1,0 +1,20 @@
+PURPOSE : calculate coverage statistics and create a BED file from coverage data, or merge multiple BED files into one
+USAGE   : __PROGRAM_NAME__ [InputFile(s)] [options] > Merged_BED
+INPUT   : --format=multi     output of samtools depth, multiple samples per file
+          --format=samtools  output of samtools depth, one sample per file
+          --format=gatk      output of GATK DepthOfCoverage, one sample per file
+          --format=bed       .bed files
+OPTIONS : __PRTXTFMT_HANGING__19
+ --format S        Input file format (multi/samtools/gatk/bed) {Not defined. This option is mandatory.}
+ --dp Ds           A locus is covered in a sample if read depth is >= D {_Default_DP}
+ --pc D            A locus is covered if D of the samples are covered (D in [0,1]) {_Default_PC}
+ --cutoff D        The read depth threshold for the well-covered regions to be written to the Merged_BED {_Default_cutoff}
+ --on-target F     Calculate the coverage of the targeted regions in F {_Default_target}
+ --per-gene F      Calculate the coverage of each gene and write summary to F {_Default_summary}
+ --up I            Gene regions include upstream padding of I basepairs {_Default_up}
+ --dn I            Gene regions include downstream padding of I basepairs {_Default_dn}
+ --intron I        Gene regions include intronic padding of I basepairs {_Default_intron}
+ --log F           Write coverage   (3 columns: chr,bp,samples_covered) to F {_Default_log}
+ --mean F          Write mean depth (3 columns: chr,bp,mean_depth) to F {_Default_mean}
+ --split S         Split output if the distance between two regions are greater than S. S is a number followed by bp/kb/mb (0 = no splitting). Output files are named <prefix>#.bed, where <prefix> is set by the --prefix option. {_Default_split}
+ --padding I       Add I basepairs padding on both side. For --format=bed only. {_Default_padding}

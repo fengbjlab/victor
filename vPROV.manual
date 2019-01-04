@@ -1,0 +1,6 @@
+PURPOSE : calculate PROVEAN score by calling provean.sh
+USAGE   : __PROGRAM_NAME__ [Options] INPUT(s) > OUTPUT
+INPUT(s): 3 columns: Variant Transcript HGVS
+OUTPUT  : 5 columns: #CHROM POS REF ALT PROVEAN. Sorted.
+OPTIONS : __PRTXTFMT_HANGING__19
+ --anc F           Ancestral variants {_Default_anc}

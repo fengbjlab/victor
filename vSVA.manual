@@ -1,0 +1,22 @@
+PURPOSE : analyze structural variations
+USAGE   : __PROGRAM_NAME__ [GenotypeFile] [Options] [>ScoreFile]
+OPTIONS : __PRTXTFMT_HANGING__19
+--spl F            Read Sample File F {_Default_sample_file}
+--rm-ind Fs        Remove samples listed in file(s) Fs {_Default_rm_ind}
+--penn B           GenotypeFile is in PennCNV format {_Default_penn}
+--clamms B         GenotypeFile is in CLAMMs format {_Default_clamms}
+--long B           GenotypeFile is in Long Format {_Default_long}
+--sv-type Ss       Include only these types of structural variation (DEL,DUP,INS,INV) {_Default_sv_type}
+--pDup-damage B    Include partial duplication of a gene as damaging {_Default_pDupDamage}
+--filt-vqs D       Exclude variants if VQSLOD<D (0 != no filtering) {_Default_filt_VQS}
+--filt-filter Ss   Exclude variants if FILTER is not one of Ss {_Default_filt_FILTER}
+--filt-miss-rate D Exclude genes if missing rate in either cases or controls is > D (1 = no filtering) {_Default_filt_miss_t}
+--filt-miss-pv D   Exclude genes if missing rate between cases and controls has a p-value <= D (0=no_filtering) {_Default_filt_miss_d}
+--filt-SplAF D     Exclude genes if observed deletions or duplications is >=D (0=no_filtering) {_Default_filt_SplAF}
+--up I             Gene regions include upstream padding of I basepairs {_Default_up}
+--dn I             Gene regions include downstream padding of I basepairs {_Default_dn}
+--intron I         Gene regions include intronic padding of I basepairs {_Default_dn}
+--detail F         Output variant details to F (col: Chr Start End Type Symbol SeqID RemainCopy) {_Default_det_log}
+--test             Output test results to standard output (no/damaging/enhancing) {_Default_test}
+--penetrance D,D,D for --test, penetrance of causal variant {_Default_penetrance}
+--prevalence D     for --test, prevalence of the disease {_Default_prevalence}
