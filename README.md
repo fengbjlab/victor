@@ -3,7 +3,7 @@ VICTOR = variant interpretation for clinical testing or research
 
 ### How to compile
 
-1. Install the required libraries listed below. In Mac, install to /opt/local/; in Linux, install to ~/local/. If you like to install other locations, modify the makefile accordingly.
+1. Install the required libraries listed below. In Mac, install to /opt/local/; in Linux, install to ~/local/. If you like to install to other locations, modify the makefile accordingly.
 
 * bzip2(1.0.6)		http://bzip.org
 * zlib(1.2.8)		http://zlib.net
@@ -16,7 +16,7 @@ VICTOR = variant interpretation for clinical testing or research
 For linux
 ```
 cd src
-mv makefile.linux
+cp makefile.linux makefile
 make
 make clean
 ```
