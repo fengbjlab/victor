@@ -35,7 +35,6 @@ OPTIONS : __PRTXTFMT_HANGING__19
  --filt-benign B   Filter out known benign variants annotated from --vks {_Default_filt_benign}
  --no-filter B     Do not filter variants (equal to --filter= --filt-benign=no) {_Default_no_filter}
  --no-split B      Do not split overlapping genes into multiple lines. Output sorted by Chr,Pos,Ref,Alt. {_Default_no_split}
- --norm-only B     Do not do annotation, just left-normalize POS,REF,ALT. Output sorted by Chr,Pos,Ref,Alt. {_Default_LNonly}
  --no-nmd B        Label Nonsense-mediated mRNA decay (NMD) variants as (LoF), otherwise (NMD) {_Default_no_nmd}
  --allSpliceLoF B  All SpliceSite variants are LoF, even if there is an alternative Tx where it is not LoF. {_Default_allSpliceLoF}
  --one-lett B      HGVS use one letter amino acid code {_Default_one_lett}
@@ -44,3 +43,11 @@ OPTIONS : __PRTXTFMT_HANGING__19
  --add-info B      Write annotation to the INFO field instead of adding a new column {_Default_add_info}
  --log FILE        Output to FILE the variants that were filtered out by --filter {_Default_out_log}
  --rm-big-indel I  Remove InDels whose size is > I {_Default_rm_big_indel}
+
+<><><><><><><><><>
+ Other usages
+<><><><><><><><><>
+
+ --norm-only B     Do not do annotation, just left-normalize POS,REF,ALT. Output sorted by Chr,Pos,Ref,Alt. {_Default_LNonly}
+ --swap B          Do not do annotation, just correct REF errors by swapping REF & ALT. {_Default_cs}
+ --flip B          Do not do annotation, just correct REF errors by flipping strand. {_Default_cf}

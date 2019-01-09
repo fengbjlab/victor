@@ -1,0 +1,483 @@
+CXX = g++ -std=c++11 -Wall -Wno-maybe-uninitialized -O1
+CXXFLAGS = -I$$HOME/local/include -D_GLIBCXX_USE_NANOSLEEP -D_STAT_USE_BOOST
+
+DIFF = ./sdiff
+PRE = ./
+MAJOR = 1
+MINOR = 0
+LIBS = -pthread -L$$HOME/local/lib -lboost_date_time -lboost_filesystem -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lrt -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
+
+%.o:           	%.cpp
+		$(CXX) $(CXXFLAGS) -c $*.cpp
+
+everything:    	vSVA vSPLIT vSEG vQS vQC vPROV vPHASE vPC vMerge vMNP vMAF vINFO vGrp vFIN vFILT vDEL vConvertVCF vConvertTest vConvertPed vBED2 vBED vAnnGene vAnnDomain vAnnDel vAnnBase vAAA2 vAAA gnGBA HGVSreader 
+
+HGVSreader_obj = HGVSreader_info.o HGVSreader.o victor_par.o
+
+HGVSreader:    	$(HGVSreader_obj)
+		$(CXX) -o $@ $(HGVSreader_obj) $(LIBS) -L. -lm
+
+HGVSreader.o:  	HGVSreader.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+HGVSreader_info.o:	HGVSreader_info.cpp HGVSreader_info.hpp
+
+HGVSreader.txx:	HGVSreader
+		$(PRE)HGVSreader > HGVSreader.txx
+		$(DIFF) HGVSreader.txt HGVSreader.txx
+
+gnGBA_obj = gnGBA_info.o gnGBA.o victor_par.o
+
+gnGBA:         	$(gnGBA_obj)
+		$(CXX) -o $@ $(gnGBA_obj) $(LIBS) -L. -lm
+
+gnGBA.o:       	gnGBA.cpp victor_par.hpp gnGBA.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+gnGBA_info.o:	gnGBA_info.cpp gnGBA_info.hpp
+
+gnGBA.txx:     	gnGBA
+		$(PRE)gnGBA > gnGBA.txx
+		$(DIFF) gnGBA.txt gnGBA.txx
+
+vAAA_obj = vAAA_info.o vAAA.o victor_par.o vAAA_ssu.o vAAA_GLR.o vAAA_par.o vAAA_if.o vAAA_sv.o
+
+vAAA:          	$(vAAA_obj)
+		$(CXX) -o $@ $(vAAA_obj) $(LIBS) -L. -lm
+
+vAAA.o:        	vAAA.cpp victor_par.hpp vAAA_ssu.hpp vAAA_GLR.hpp vAAA_par.hpp vAAA_if.hpp vAAA_sv.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAAA_ssu.o:    	vAAA_ssu.cpp vAAA_ssu.hpp
+
+vAAA_GLR.o:    	vAAA_GLR.cpp vAAA_par.hpp vAAA_GLR.hpp victor_par.hpp
+
+vAAA_par.o:    	vAAA_par.cpp vAAA_par.hpp
+
+vAAA_if.o:     	vAAA_if.cpp victor_par.hpp vAAA_if.hpp
+
+vAAA_sv.o:     	vAAA_sv.cpp vAAA_sv.hpp
+
+vAAA_info.o:	vAAA_info.cpp vAAA_info.hpp
+
+vAAA.txx:      	vAAA
+		$(PRE)vAAA > vAAA.txx
+		$(DIFF) vAAA.txt vAAA.txx
+
+vAAA2_obj = vAAA2_info.o vAAA2.o victor_par.o vAAA_ssu.o vAAA_GLR.o vAAA_par.o vAAA_if.o vAAA_sv.o
+
+vAAA2:         	$(vAAA2_obj)
+		$(CXX) -o $@ $(vAAA2_obj) $(LIBS) -L. -lm
+
+vAAA2.o:       	vAAA2.cpp victor_par.hpp vAAA_ssu.hpp vAAA_GLR.hpp vAAA_par.hpp vAAA_if.hpp vAAA_sv.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAAA_ssu.o:    	vAAA_ssu.cpp vAAA_ssu.hpp
+
+vAAA_GLR.o:    	vAAA_GLR.cpp vAAA_par.hpp vAAA_GLR.hpp victor_par.hpp
+
+vAAA_par.o:    	vAAA_par.cpp vAAA_par.hpp
+
+vAAA_if.o:     	vAAA_if.cpp victor_par.hpp vAAA_if.hpp
+
+vAAA_sv.o:     	vAAA_sv.cpp vAAA_sv.hpp
+
+vAAA2_info.o:	vAAA2_info.cpp vAAA2_info.hpp
+
+vAAA2.txx:     	vAAA2
+		$(PRE)vAAA2 > vAAA2.txx
+		$(DIFF) vAAA2.txt vAAA2.txx
+
+vAnnBase_obj = vAnnBase_info.o vAnnBase.o victor_par.o
+
+vAnnBase:      	$(vAnnBase_obj)
+		$(CXX) -o $@ $(vAnnBase_obj) $(LIBS) -L. -lm
+
+vAnnBase.o:    	vAnnBase.cpp vDEL.hpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAnnBase_info.o:	vAnnBase_info.cpp vAnnBase_info.hpp
+
+vAnnBase.txx:  	vAnnBase
+		$(PRE)vAnnBase > vAnnBase.txx
+		$(DIFF) vAnnBase.txt vAnnBase.txx
+
+vAnnDel_obj = vAnnDel_info.o vAnnDel.o victor_par.o
+
+vAnnDel:       	$(vAnnDel_obj)
+		$(CXX) -o $@ $(vAnnDel_obj) $(LIBS) -L. -lm
+
+vAnnDel.o:     	vAnnDel.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAnnDel_info.o:	vAnnDel_info.cpp vAnnDel_info.hpp
+
+vAnnDel.txx:   	vAnnDel
+		$(PRE)vAnnDel > vAnnDel.txx
+		$(DIFF) vAnnDel.txt vAnnDel.txx
+
+vAnnDomain_obj = vAnnDomain_info.o vAnnDomain.o victor_par.o
+
+vAnnDomain:    	$(vAnnDomain_obj)
+		$(CXX) -o $@ $(vAnnDomain_obj) $(LIBS) -L. -lm
+
+vAnnDomain.o:  	vAnnDomain.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAnnDomain_info.o:	vAnnDomain_info.cpp vAnnDomain_info.hpp
+
+vAnnDomain.txx:	vAnnDomain
+		$(PRE)vAnnDomain > vAnnDomain.txx
+		$(DIFF) vAnnDomain.txt vAnnDomain.txx
+
+vAnnGene_obj = vAnnGene_info.o vAnnGene.o victor_par.o vAnnGene_knClinSig.o vAnnGene_anc.o
+
+vAnnGene:      	$(vAnnGene_obj)
+		$(CXX) -o $@ $(vAnnGene_obj) $(LIBS) -L. -lm
+
+vAnnGene.o:    	vAnnGene.cpp victor_par.hpp vAnnGene_knClinSig.hpp vAnnGene_anc.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAnnGene_knClinSig.o:	vAnnGene_knClinSig.cpp vAnnGene_knClinSig.hpp victor_par.hpp
+
+vAnnGene_anc.o:	vAnnGene_anc.cpp vAnnGene_anc.hpp
+
+vAnnGene_info.o:	vAnnGene_info.cpp vAnnGene_info.hpp
+
+vAnnGene.txx:  	vAnnGene
+		$(PRE)vAnnGene > vAnnGene.txx
+		$(DIFF) vAnnGene.txt vAnnGene.txx
+
+vBED_obj = vBED_info.o vBED.o victor_par.o
+
+vBED:          	$(vBED_obj)
+		$(CXX) -o $@ $(vBED_obj) $(LIBS) -L. -lm
+
+vBED.o:        	vBED.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vBED_info.o:	vBED_info.cpp vBED_info.hpp
+
+vBED.txx:      	vBED
+		$(PRE)vBED > vBED.txx
+		$(DIFF) vBED.txt vBED.txx
+
+vBED2_obj = vBED2_info.o vBED2.o victor_par.o
+
+vBED2:         	$(vBED2_obj)
+		$(CXX) -o $@ $(vBED2_obj) $(LIBS) -L. -lm
+
+vBED2.o:       	vBED2.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vBED2_info.o:	vBED2_info.cpp vBED2_info.hpp
+
+vBED2.txx:     	vBED2
+		$(PRE)vBED2 > vBED2.txx
+		$(DIFF) vBED2.txt vBED2.txx
+
+vConvertPed_obj = vConvertPed_info.o vConvertPed.o victor_par.o
+
+vConvertPed:   	$(vConvertPed_obj)
+		$(CXX) -o $@ $(vConvertPed_obj) $(LIBS) -L. -lm
+
+vConvertPed.o: 	vConvertPed.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vConvertPed_info.o:	vConvertPed_info.cpp vConvertPed_info.hpp
+
+vConvertPed.txx:	vConvertPed
+		$(PRE)vConvertPed > vConvertPed.txx
+		$(DIFF) vConvertPed.txt vConvertPed.txx
+
+vConvertTest_obj = vConvertTest_info.o vConvertTest.o victor_par.o
+
+vConvertTest:  	$(vConvertTest_obj)
+		$(CXX) -o $@ $(vConvertTest_obj) $(LIBS) -L. -lm
+
+vConvertTest.o:	vConvertTest.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vConvertTest_info.o:	vConvertTest_info.cpp vConvertTest_info.hpp
+
+vConvertTest.txx:	vConvertTest
+		$(PRE)vConvertTest > vConvertTest.txx
+		$(DIFF) vConvertTest.txt vConvertTest.txx
+
+vConvertVCF_obj = vConvertVCF_info.o vConvertVCF.o victor_par.o
+
+vConvertVCF:   	$(vConvertVCF_obj)
+		$(CXX) -o $@ $(vConvertVCF_obj) $(LIBS) -L. -lm
+
+vConvertVCF.o: 	vConvertVCF.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vConvertVCF_info.o:	vConvertVCF_info.cpp vConvertVCF_info.hpp
+
+vConvertVCF.txx:	vConvertVCF
+		$(PRE)vConvertVCF > vConvertVCF.txx
+		$(DIFF) vConvertVCF.txt vConvertVCF.txx
+
+vDEL_obj = vDEL_info.o vDEL.o victor_par.o
+
+vDEL:          	$(vDEL_obj)
+		$(CXX) -o $@ $(vDEL_obj) $(LIBS) -L. -lm
+
+vDEL.o:        	vDEL.cpp vDEL.hpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vDEL_info.o:	vDEL_info.cpp vDEL_info.hpp
+
+vDEL.txx:      	vDEL
+		$(PRE)vDEL > vDEL.txx
+		$(DIFF) vDEL.txt vDEL.txx
+
+vFILT_obj = vFILT_info.o vFILT.o victor_par.o
+
+vFILT:         	$(vFILT_obj)
+		$(CXX) -o $@ $(vFILT_obj) $(LIBS) -L. -lm
+
+vFILT.o:       	vFILT.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vFILT_info.o:	vFILT_info.cpp vFILT_info.hpp
+
+vFILT.txx:     	vFILT
+		$(PRE)vFILT > vFILT.txx
+		$(DIFF) vFILT.txt vFILT.txx
+
+vFIN_obj = vFIN_info.o vFIN.o victor_par.o
+
+vFIN:          	$(vFIN_obj)
+		$(CXX) -o $@ $(vFIN_obj) $(LIBS) -L. -lm
+
+vFIN.o:        	vFIN.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vFIN_info.o:	vFIN_info.cpp vFIN_info.hpp
+
+vFIN.txx:      	vFIN
+		$(PRE)vFIN > vFIN.txx
+		$(DIFF) vFIN.txt vFIN.txx
+
+vGrp_obj = vGrp_info.o vGrp.o victor_par.o
+
+vGrp:          	$(vGrp_obj)
+		$(CXX) -o $@ $(vGrp_obj) $(LIBS) -L. -lm
+
+vGrp.o:        	vGrp.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vGrp_info.o:	vGrp_info.cpp vGrp_info.hpp
+
+vGrp.txx:      	vGrp
+		$(PRE)vGrp > vGrp.txx
+		$(DIFF) vGrp.txt vGrp.txx
+
+vINFO_obj = vINFO_info.o vINFO.o victor_par.o
+
+vINFO:         	$(vINFO_obj)
+		$(CXX) -o $@ $(vINFO_obj) $(LIBS) -L. -lm
+
+vINFO.o:       	vINFO.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vINFO_info.o:	vINFO_info.cpp vINFO_info.hpp
+
+vINFO.txx:     	vINFO
+		$(PRE)vINFO > vINFO.txx
+		$(DIFF) vINFO.txt vINFO.txx
+
+vMAF_obj = vMAF_info.o vMAF.o victor_par.o
+
+vMAF:          	$(vMAF_obj)
+		$(CXX) -o $@ $(vMAF_obj) $(LIBS) -L. -lm
+
+vMAF.o:        	vMAF.cpp vDEL.hpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vMAF_info.o:	vMAF_info.cpp vMAF_info.hpp
+
+vMAF.txx:      	vMAF
+		$(PRE)vMAF > vMAF.txx
+		$(DIFF) vMAF.txt vMAF.txx
+
+vMNP_obj = vMNP_info.o vMNP.o victor_par.o
+
+vMNP:          	$(vMNP_obj)
+		$(CXX) -o $@ $(vMNP_obj) $(LIBS) -L. -lm
+
+vMNP.o:        	vMNP.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vMNP_info.o:	vMNP_info.cpp vMNP_info.hpp
+
+vMNP.txx:      	vMNP
+		$(PRE)vMNP > vMNP.txx
+		$(DIFF) vMNP.txt vMNP.txx
+
+vMerge_obj = vMerge_info.o vMerge.o victor_par.o
+
+vMerge:        	$(vMerge_obj)
+		$(CXX) -o $@ $(vMerge_obj) $(LIBS) -L. -lm
+
+vMerge.o:      	vMerge.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vMerge_info.o:	vMerge_info.cpp vMerge_info.hpp
+
+vMerge.txx:    	vMerge
+		$(PRE)vMerge > vMerge.txx
+		$(DIFF) vMerge.txt vMerge.txx
+
+vPC_obj = vPC_info.o vPC.o victor_par.o
+
+vPC:           	$(vPC_obj)
+		$(CXX) -o $@ $(vPC_obj) $(LIBS) -L. -lm
+
+vPC.o:         	vPC.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vPC_info.o:	vPC_info.cpp vPC_info.hpp
+
+vPC.txx:       	vPC
+		$(PRE)vPC > vPC.txx
+		$(DIFF) vPC.txt vPC.txx
+
+vPHASE_obj = vPHASE_info.o vPHASE.o victor_par.o
+
+vPHASE:        	$(vPHASE_obj)
+		$(CXX) -o $@ $(vPHASE_obj) $(LIBS) -L. -lm
+
+vPHASE.o:      	vPHASE.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vPHASE_info.o:	vPHASE_info.cpp vPHASE_info.hpp
+
+vPHASE.txx:    	vPHASE
+		$(PRE)vPHASE > vPHASE.txx
+		$(DIFF) vPHASE.txt vPHASE.txx
+
+vPROV_obj = vPROV_info.o vPROV.o victor_par.o vAnnGene_anc.o
+
+vPROV:         	$(vPROV_obj)
+		$(CXX) -o $@ $(vPROV_obj) $(LIBS) -L. -lm
+
+vPROV.o:       	vPROV.cpp victor_par.hpp vAnnGene_anc.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vAnnGene_anc.o:	vAnnGene_anc.cpp vAnnGene_anc.hpp
+
+vPROV_info.o:	vPROV_info.cpp vPROV_info.hpp
+
+vPROV.txx:     	vPROV
+		$(PRE)vPROV > vPROV.txx
+		$(DIFF) vPROV.txt vPROV.txx
+
+vQC_obj = vQC_info.o vQC.o victor_par.o
+
+vQC:           	$(vQC_obj)
+		$(CXX) -o $@ $(vQC_obj) $(LIBS) -L. -lm
+
+vQC.o:         	vQC.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vQC_info.o:	vQC_info.cpp vQC_info.hpp
+
+vQC.txx:       	vQC
+		$(PRE)vQC > vQC.txx
+		$(DIFF) vQC.txt vQC.txx
+
+vQS_obj = vQS_info.o vQS.o victor_par.o
+
+vQS:           	$(vQS_obj)
+		$(CXX) -o $@ $(vQS_obj) $(LIBS) -L. -lm
+
+vQS.o:         	vQS.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vQS_info.o:	vQS_info.cpp vQS_info.hpp
+
+vQS.txx:       	vQS
+		$(PRE)vQS > vQS.txx
+		$(DIFF) vQS.txt vQS.txx
+
+vSEG_obj = vSEG_info.o vSEG.o linkage51_makeped.o linkage51_unknown.o linkage51_mlink.o victor_par.o
+
+vSEG:          	$(vSEG_obj)
+		$(CXX) -o $@ $(vSEG_obj) $(LIBS) -L. -lm
+
+vSEG.o:        	vSEG.cpp linkage51.hpp victor_par.hpp
+
+linkage51_makeped.o:	linkage51_makeped.cpp
+
+linkage51_unknown.o:	linkage51_unknown.cpp
+
+linkage51_mlink.o:	linkage51_mlink.cpp linkage51.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vSEG_info.o:	vSEG_info.cpp vSEG_info.hpp
+
+vSEG.txx:      	vSEG
+		$(PRE)vSEG > vSEG.txx
+		$(DIFF) vSEG.txt vSEG.txx
+
+vSPLIT_obj = vSPLIT_info.o vSPLIT.o victor_par.o
+
+vSPLIT:        	$(vSPLIT_obj)
+		$(CXX) -o $@ $(vSPLIT_obj) $(LIBS) -L. -lm
+
+vSPLIT.o:      	vSPLIT.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vSPLIT_info.o:	vSPLIT_info.cpp vSPLIT_info.hpp
+
+vSPLIT.txx:    	vSPLIT
+		$(PRE)vSPLIT > vSPLIT.txx
+		$(DIFF) vSPLIT.txt vSPLIT.txx
+
+vSVA_obj = vSVA_info.o vSVA.o victor_par.o
+
+vSVA:          	$(vSVA_obj)
+		$(CXX) -o $@ $(vSVA_obj) $(LIBS) -L. -lm
+
+vSVA.o:        	vSVA.cpp victor_par.hpp
+
+victor_par.o:  	victor_par.cpp victor_par.hpp
+
+vSVA_info.o:	vSVA_info.cpp vSVA_info.hpp
+
+vSVA.txx:      	vSVA
+		$(PRE)vSVA > vSVA.txx
+		$(DIFF) vSVA.txt vSVA.txx
+
+clean:
+		rm -f $(HGVSreader_obj) $(gnGBA_obj) $(vAAA_obj) $(vAAA2_obj) $(vAnnBase_obj) $(vAnnDel_obj) $(vAnnDomain_obj) $(vAnnGene_obj) $(vBED_obj) $(vBED2_obj) $(vConvertPed_obj) $(vConvertTest_obj) $(vConvertVCF_obj) $(vDEL_obj) $(vFILT_obj) $(vFIN_obj) $(vGrp_obj) $(vINFO_obj) $(vMAF_obj) $(vMNP_obj) $(vMerge_obj) $(vPC_obj) $(vPHASE_obj) $(vPROV_obj) $(vQC_obj) $(vQS_obj) $(vSEG_obj) $(vSPLIT_obj) $(vSVA_obj)

@@ -2,29 +2,35 @@
 
 /*
  Features:
- 1) MAF is not MLE.
- 2) Truely weighting, and can weight by D+Q+G+S.
+ 1) MAF is not by MLE.
+ 2) Truely weighting, and can weight by Deleteriousness+Quality+GuiltByAssociation+Segregation.
  3) Use LINKAGE to detect Mendelian error rather than just trios.
- 4) Collapse haplotypes rather than count alleles, so it's robust to LD.
+ 4) Calculating probability of damaging of a haplotype rather than counting pathogenic variants, so it's robust to LD.
  5) Provide different risk models (polygenic dominant recessive additive).
  6) Can handle counpound heterozygosity.
  7) Can do logistic regression and linear regression, so can be used for QTs.
  8) regression uses sample weights to control for familial correlations.
- 9) All methods can include covariates.
- 10) Use multithreading to do permutation.
- 11) genome-wide permutation p-value, less conservative than Bonferroni and robust to overlapping variant sets.
- 12) Do not filter MAF in controls, but on all samples, which is unbiased.
+ 9) allow user-defined R codes, so it can do cox regression or other analysis.
+ 10) write involve_MHC, so user can adjust for HLA gene depending on whether it's in the MHC region.
+ 11) All methods can include covariates, including FET.
+ 12) Use multithreading to do permutation.
+ 13) genome-wide permutation p-value, less conservative than Bonferroni and robust to overlapping variant sets (overlapping gene or pathway).
+ 14) Do not filter MAF in controls, but in all samples, which is unbiased.
+ 15) one-sided test is less noisy.
+ 16) provide options (--flip-aff --filt-MaxAF --filt-FdrAF --filt-del) to search for protective genes.
+ 17) jointly consider large deletions while analyzing small variants.
+ 18) gene set analysis
 
  Input: study data contain cases and controls.
  Input: must contain Func_Gene & is sorted. Use them to identify variant groups.
  Input: must contain Chr,Start,End,Ref,Alt. Use them to identify variant duplicates.
- If there're duplicated variants within a group, only the first is used (D must be descending).
+ If there're duplicated variants within a group, only the first is used (deleteriousness better be descending).
  It writes only rows whose case genotype is not empty, a useful feature for combined data (eg, Ps cs + BrCa ct).
  
  Caveats:
- 1) Taking the first variant among duplicates requires sorted input.
+ 1) Taking the first variant among duplicates requires input sorted by BayesDel.
  2) SSU includes matrix operations, which slow down very fast when the number of variants increases. Previously, I used cap (--cap=0.1) to solve it, but it doesn't work for GSA (BayesDel not sorted).
- 
+
  Hidden options:
  --wt-del B         Weight variants by deleteriousness {_Default_wt_del}
  --wt-vqs B         Weight variants by call quality {_Default_wt_vqs}
@@ -44,7 +50,8 @@
  --af Ss            Ordered allele frequency fields in INFO for polygenic odds ratio calculation (--por) {_Default_af}
  --prs B            using Polygenic Risk Score (requires PRS_beta and PRS_allele in INFO) {_Default_prs}
  --por B            using Polygenic Odds Ratio reference to general population (also requires PRS_freq in INFO or --af) {_Default_por}
- 
+ --ok-no-match B    skip the variants that have no match in the Genotype File {_Default_ok_no_match}
+
  Removed options:
  --recessive B      Do recessive model in FET {_Default_recessive}
  --polygenic        Do HLR using a polygenic model
@@ -1543,7 +1550,6 @@ void _run_job(JobData& p)
 				double mlp = std::numeric_limits<double>::signaling_NaN();
 				{
 					bool read_pval=false;
-					bool read_info=false;
 					vector<string> lines;
 					boost::split(lines,result,boost::is_any_of("\n"));
 					for (auto &l:lines)
@@ -1567,7 +1573,6 @@ void _run_job(JobData& p)
 							boost::split(words,l,boost::is_any_of(" "),boost::token_compress_on);
 							if (words.size()<2) exit_error("cannot read MyR_info for "+str_of_uniq(p.gnm,',')+"\nResult: "+result);
 							p.xtr=words[1];
-							read_info=true;
 						}
 					}
 					if (!read_pval) exit_error("there is no MyR_pval output from the R code");
@@ -1918,11 +1923,9 @@ int main (int argc, char * const argv[])
 		else if (program.arg()[argi]=="--FET")		{	AnalysisMethod=FET; Var_Wt=false; }
 		else if (program.arg()[argi]=="--opt-pen")	{	AnalysisMethod=OPN; penetrance = &penetrance_by_gtp; }
 		else if (program.arg()[argi]=="--HLR")		{	AnalysisMethod=HLR; penetrance = &penetrance_by_gtp; }
-//		else if (program.arg()[argi]=="--polygenic"){	AnalysisMethod=POL; penetrance = &penetrance_by_prs; }
 		else if (program.arg()[argi]=="--SSUw")		{	AnalysisMethod=SSU; do_SSUw=&pv_SSUw; }
 		else if (program.arg()[argi]=="--SSUc")		{	AnalysisMethod=SSU; do_SSUw=&pv_SSUc; }
 		else if (program.arg()[argi]=="--logistic")	{	AnalysisMethod=FLR; }
-//		else if (program.arg()[argi]=="--logistic")	{	AnalysisMethod=REG; regress=&pv_1st_logistic; }
 		else if (program.arg()[argi]=="--linear")	{	AnalysisMethod=REG; regress=&pv_1st_linear;   }
 		else if (program.arg()[argi]=="--write")	{	AnalysisMethod=OUT; }
 		else if (program.arg()[argi]=="--immed-cor"){	immedC=true;  delayC=false; constC=false; }
