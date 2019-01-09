@@ -479,5 +479,8 @@ vSVA.txx:      	vSVA
 		$(PRE)vSVA > vSVA.txx
 		$(DIFF) vSVA.txt vSVA.txx
 
+ALL_BIN = vSVA vSPLIT vSEG vQS vQC vPROV vPHASE vPC vMerge vMNP vMAF vINFO vGrp vFIN vFILT vDEL vConvertVCF vConvertTest vConvertPed vBED2 vBED vAnnGene vAnnDomain vAnnDel vAnnBase vAAA2 vAAA gnGBA HGVSreader 
+
 clean:
 		rm -f $(HGVSreader_obj) $(gnGBA_obj) $(vAAA_obj) $(vAAA2_obj) $(vAnnBase_obj) $(vAnnDel_obj) $(vAnnDomain_obj) $(vAnnGene_obj) $(vBED_obj) $(vBED2_obj) $(vConvertPed_obj) $(vConvertTest_obj) $(vConvertVCF_obj) $(vDEL_obj) $(vFILT_obj) $(vFIN_obj) $(vGrp_obj) $(vINFO_obj) $(vMAF_obj) $(vMNP_obj) $(vMerge_obj) $(vPC_obj) $(vPHASE_obj) $(vPROV_obj) $(vQC_obj) $(vQS_obj) $(vSEG_obj) $(vSPLIT_obj) $(vSVA_obj)
+		mv $(ALL_BIN) ../bin

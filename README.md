@@ -20,3 +20,5 @@ cp makefile.$OS makefile
 make
 make clean
 ```
+
+The executable files are in bin/.
