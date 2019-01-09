@@ -5,7 +5,7 @@ DIFF = ./sdiff
 PRE = ./
 MAJOR = 1
 MINOR = 0
-LIBS = -pthread -L$$HOME/local/lib -lboost_date_time -lboost_filesystem -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lrt -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
+LIBS = -L$$HOME/local/lib -pthread -ltft -lboost_date_time -lboost_filesystem -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lrt -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
 
 %.o:           	%.cpp
 		$(CXX) $(CXXFLAGS) -c $*.cpp
