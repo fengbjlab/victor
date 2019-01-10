@@ -19,7 +19,7 @@ VICTOR = variant interpretation for clinical testing or research
 
 ### How to compile
 
-There are two makefile in the src/ folder, one for linux and one for Mac OS. They assume that the libraries are installed to /opt/local/ in Mac and to ~/local/ in linux. If the libraries are in other location, change the makefile. The following commands will compile the programs, create a bin/ folder, and put the binary executable files in the bin/.
+The following commands will compile the programs, create a bin/ folder, and put the binary executable files in the bin/.
 
 ```
 cd src
