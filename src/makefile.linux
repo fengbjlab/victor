@@ -1,11 +1,11 @@
 CXX = g++ -std=c++11 -Wall -Wno-maybe-uninitialized -O1
-CXXFLAGS = -I$$HOME/local/include -D_GLIBCXX_USE_NANOSLEEP -D_STAT_USE_BOOST
+CXXFLAGS = -I../linux/include -D_GLIBCXX_USE_NANOSLEEP -D_STAT_USE_BOOST
 
 DIFF = ./sdiff
 PRE = ./
 MAJOR = 1
 MINOR = 0
-LIBS = -L$$HOME/local/lib -pthread -ltft -lboost_date_time -lboost_filesystem -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lrt -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
+LIBS = -L../linux/lib -pthread -ltft -lboost_date_time -lboost_filesystem -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lrt -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
 
 %.o:           	%.cpp
 		$(CXX) $(CXXFLAGS) -c $*.cpp

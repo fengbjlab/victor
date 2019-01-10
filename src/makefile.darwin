@@ -1,11 +1,11 @@
 CXX = clang++ -std=c++11 -stdlib=libc++ -O1 -mmacosx-version-min=10.7
-CXXFLAGS = -I/opt/local/include -Wall -Wno-deprecated-register -Wno-unused-variable -D_STAT_USE_BOOST -DBOOST_THREAD_DONT_USE_CHRONO
+CXXFLAGS = -I../mac/include -Wall -Wno-deprecated-register -Wno-unused-variable -D_STAT_USE_BOOST -DBOOST_THREAD_DONT_USE_CHRONO
 
 DIFF = ./sdiff
 PRE = ./
 MAJOR = 1
 MINOR = 0
-LIBS = -L/opt/local/static_lib -ltft -lboost_filesystem -lboost_date_time -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
+LIBS = -L../mac/lib -ltft -lboost_filesystem -lboost_date_time -lboost_iostreams -lboost_regex -lboost_system -lboost_thread -lz -lbz2 -lncurses -lptoc -lnlopt_cxx
 
 %.o:           	%.cpp
 		$(CXX) $(CXXFLAGS) -c $*.cpp
