@@ -42,7 +42,7 @@ gnGBA.txx:     	gnGBA
 		$(PRE)gnGBA > gnGBA.txx
 		$(DIFF) gnGBA.txt gnGBA.txx
 
-vAAA_obj = vAAA_info.o victor_par.o vAAA.o victor_par.o vAAA_ssu.o vAAA_GLR.o vAAA_par.o vAAA_if.o vAAA_sv.o
+vAAA_obj = vAAA_info.o victor_par.o vAAA.o vAAA_ssu.o vAAA_GLR.o vAAA_par.o vAAA_if.o vAAA_sv.o
 
 vAAA:          	$(vAAA_obj)
 		$(CXX) -o $@ $(vAAA_obj) $(LIBS) -L. -lm
@@ -67,7 +67,7 @@ vAAA.txx:      	vAAA
 		$(PRE)vAAA > vAAA.txx
 		$(DIFF) vAAA.txt vAAA.txx
 
-vAAA2_obj = vAAA2_info.o victor_par.o vAAA2.o victor_par.o vAAA_ssu.o vAAA_GLR.o vAAA_par.o vAAA_if.o vAAA_sv.o
+vAAA2_obj = vAAA2_info.o victor_par.o vAAA2.o vAAA_ssu.o vAAA_GLR.o vAAA_par.o vAAA_if.o vAAA_sv.o
 
 vAAA2:         	$(vAAA2_obj)
 		$(CXX) -o $@ $(vAAA2_obj) $(LIBS) -L. -lm
@@ -137,7 +137,7 @@ vAnnDomain.txx:	vAnnDomain
 		$(PRE)vAnnDomain > vAnnDomain.txx
 		$(DIFF) vAnnDomain.txt vAnnDomain.txx
 
-vAnnGene_obj = vAnnGene_info.o victor_par.o vAnnGene.o victor_par.o vAnnGene_knClinSig.o vAnnGene_anc.o
+vAnnGene_obj = vAnnGene_info.o victor_par.o vAnnGene.o vAnnGene_knClinSig.o vAnnGene_anc.o
 
 vAnnGene:      	$(vAnnGene_obj)
 		$(CXX) -o $@ $(vAnnGene_obj) $(LIBS) -L. -lm
@@ -381,7 +381,7 @@ vPHASE.txx:    	vPHASE
 		$(PRE)vPHASE > vPHASE.txx
 		$(DIFF) vPHASE.txt vPHASE.txx
 
-vPROV_obj = vPROV_info.o victor_par.o vPROV.o victor_par.o vAnnGene_anc.o
+vPROV_obj = vPROV_info.o victor_par.o vPROV.o vAnnGene_anc.o
 
 vPROV:         	$(vPROV_obj)
 		$(CXX) -o $@ $(vPROV_obj) $(LIBS) -L. -lm
@@ -428,7 +428,7 @@ vQS.txx:       	vQS
 		$(PRE)vQS > vQS.txx
 		$(DIFF) vQS.txt vQS.txx
 
-vSEG_obj = vSEG_info.o victor_par.o vSEG.o linkage51_makeped.o linkage51_unknown.o linkage51_mlink.o
+vSEG_obj = vSEG_info.o vSEG.o linkage51_makeped.o linkage51_unknown.o linkage51_mlink.o victor_par.o
 
 vSEG:          	$(vSEG_obj)
 		$(CXX) -o $@ $(vSEG_obj) $(LIBS) -L. -lm
