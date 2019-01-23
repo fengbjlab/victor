@@ -332,7 +332,7 @@ int main (int argc, char * const argv[])
 			++pid_seq[in[0]];
 		}
 	}
-	lns<<showl<<fld4ind.size()<<" sequenced samples in Pedigree File "<<ped_in<<flush_logger;
+	lns<<showl<<fld4ind.size()<<" individuals in Pedigree File "<<ped_in<<flush_logger;
 	int valid_pid=0;
 	for (auto &p:pid_seq) if (p.second>1) ++valid_pid;
 	if (valid_pid==0) exit_error("No pedigree has more than 1 sequenced samples.");

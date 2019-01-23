@@ -1819,6 +1819,7 @@ int main (int argc, char * const argv[])
 	bool			Var_Wt = false;				// apply variant weights, otherwise all filtered variants have a weight 1, i.e., probability of damaging is 100%
 	bool			single = false;				// single-variant-based analysis
 	bool			skipnm = false;				// skip the variant in the group file that has no match in VCF
+	bool			PRSPAF = false;				// PRS calibrate by population allele frequency calcualted from data
 	bool			FltLinkageErr = true;
 	double			cap_pg = 0;					// put a cap on the total number of variants per gene.   Not helpful by simulation.
 	bool			cap_ps = false;				// put a cap on the total number of variants per sample. Not helpful by simulation.
@@ -1910,6 +1911,7 @@ int main (int argc, char * const argv[])
 		else if (str_startsw(program.arg()[argi],"--prs"))				ReadArg(program.arg(),argi,usePRS);
 		else if (str_startsw(program.arg()[argi],"--por"))				ReadArg(program.arg(),argi,usePOR);
 		else if (str_startsw(program.arg()[argi],"--ok-no-match"))		ReadArg(program.arg(),argi,skipnm);
+		else if (str_startsw(program.arg()[argi],"--cal-paf"))			ReadArg(program.arg(),argi,PRSPAF);
 		else if (str_startsw(program.arg()[argi],"--do-nothing"))		ReadArg(program.arg(),argi,do_nothing);
 		else if (str_startsw(program.arg()[argi],"--my-R"))			{	ReadArg(program.arg(),argi,MyR_in); AnalysisMethod=MyR; }
 		else if (str_startsw(program.arg()[argi],"--flr-R"))		{	ReadArg(program.arg(),argi,MyR_in); AnalysisMethod=FLR; }
@@ -1987,6 +1989,7 @@ int main (int argc, char * const argv[])
 	program.help_text_var("_Default_trend",str_YesOrNo(h_test));
 	program.help_text_var("_Default_prs",str_YesOrNo(usePRS));
 	program.help_text_var("_Default_por",str_YesOrNo(usePOR));
+	program.help_text_var("_Default_cal_paf",str_YesOrNo(PRSPAF));
 	program.help_text_var("_Default_ok_no_match",str_YesOrNo(skipnm));
 	program.help_text_var("_Default_do_nothing",str_YesOrNo(do_nothing));
 	program.push_back_help(GTP::help_text());
@@ -2927,22 +2930,26 @@ read_var_group:
 		}
 		
 		// swap genotype if ref allele is rare
-		if (niA && niU && !usePRS && !usePOR)
+		if (niA && niU)
 		{
 			PAF = xiA/niA * perch::preval + xiU/niU * (1-perch::preval);
-			if (PAF>0.5)
+		}
+		else if (niU)
+		{
+			PAF = xiU/niU;
+		}
+		if (PAF>0.5 && !usePRS && !usePOR)
+		{
+			PAF=1-PAF;
+			for (auto &ind:g_cs) GTP::swap_allele(ind);
+			for (auto &ind:g_ct) GTP::swap_allele(ind);
+			if (!FldInf.no_input())
 			{
-				PAF=1-PAF;
-				for (auto &ind:g_cs) GTP::swap_allele(ind);
-				for (auto &ind:g_ct) GTP::swap_allele(ind);
-				if (!FldInf.no_input())
-				{
-					INFO.push_back("vAAA_SWAP");
-					in[FldInf[0]] = str_of_container(INFO,';');
-				}
+				INFO.push_back("vAAA_SWAP");
+				in[FldInf[0]] = str_of_container(INFO,';');
 			}
 		}
-		
+
 		// skip by --top. Must be after swapping common variants.
 		// count only the 1 or 2 most deleterious variants per sample, rely on genotype file being sorted by Del (descending) and MAF (ascending)
 		// Do not erase genotypes, otherwise a variant may be counted for some samples but not the others, not fair. Instead, erase the variant.
@@ -3020,28 +3027,32 @@ read_var_group:
 
 		if (usePRS || usePOR)
 		{
-			double PRS_beta = get_value(INFO,"PRS_beta");
-			double PRS_freq = get_value(INFO,"PRS_freq");
-			if (std::isnan(PRS_freq))
+			double PRS_beta = get_value(INFO,"PRS_beta"); // beta from publication
+			double PRS_freq = get_value(INFO,"PRS_freq"); // freq from publication
+			double loc_freq = std::numeric_limits<double>::signaling_NaN(); // freq from local population for PRS calibration and PRS_allele checking
+			for (auto &id : perch::h_afID)
 			{
-				for (auto &id : perch::h_afID)
+				double x = get_value(INFO,id);
+				if (!std::isnan(x))
 				{
-					double x = get_value(INFO,id);
-					if (!std::isnan(x))
-					{
-						if (rsk=='A')	PRS_freq=x;
-						else			PRS_freq=1-x;
-						break;
-					}
+					if (rsk=='A')	loc_freq=x;
+					else			loc_freq=1-x;
+					break;
 				}
 			}
+			if (!std::isnan(PRS_freq) && !std::isnan(loc_freq))
+			{
+				if ((PRS_freq>0.5&&loc_freq<0.5)||(PRS_freq<0.5&&loc_freq>0.5))
+					lns<<showw<<"PRS_freq doesn't match with allele frequency in --af, please check "<<VarIndex<<flush_logger;
+			}
+			if (PRSPAF) { if (rsk=='A') maf=PAF; else maf=1-PAF; }
+			else		maf=(!std::isnan(loc_freq)?loc_freq:PRS_freq);
 			if (rsk=='U') 				exit_error("PRS_allele not exist or empty. This INFO field is required for --prs or --por.");
 			if (std::isnan(PRS_beta))	exit_error("PRS_beta not exist or not a number. This INFO field is required for --prs or --por.");
-			if (std::isnan(PRS_freq) && usePOR) exit_error("Allele frequency not known for "+VarIndex);
-			maf=PRS_freq;
+			if (std::isnan(maf) && usePOR) exit_error("Allele frequency not known for "+VarIndex);
 			vw=PRS_beta;
 		}
-		
+
 		DefaultJob.idx.push_back(VarIndex);
 		DefaultJob.wts.push_back(vw);
 		DefaultJob.maf.push_back(maf);

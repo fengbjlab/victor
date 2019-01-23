@@ -57,6 +57,7 @@ int main (int argc, char * const argv[])
 	string			pergen;
 	vector<string>	inGSet;
 	set<string>		det_fn = { perch::h_Adet };
+	string			biol_s = "MAX";
 
 	// handle program options
 	program.read_arguments(argc,argv);
@@ -81,6 +82,7 @@ int main (int argc, char * const argv[])
 		else if (str_startsw(program.arg()[argi],"--plot-to"))		ReadArg(program.arg(),argi,plot_f);
 		else if	(str_startsw(program.arg()[argi],"--group"))		ReadSet(program.arg(),argi,h_grID);
 		else if (str_startsw(program.arg()[argi],"--biol"))			ReadArg(program.arg(),argi,biol_f);
+		else if (str_startsw(program.arg()[argi],"--gba-show"))		ReadArg(program.arg(),argi,biol_s);
 		else if (str_startsw(program.arg()[argi],"--trait"))		ReadArg(program.arg(),argi,biol_t);
 		else if (str_startsw(program.arg()[argi],"--prior"))		ReadArg(program.arg(),argi,priorp);
 		else if (str_startsw(program.arg()[argi],"--no-ncRNA"))		ReadArg(program.arg(),argi,NoNcGn);
@@ -100,6 +102,7 @@ int main (int argc, char * const argv[])
 	program.help_text_var("_Default_lbf",str_of_container(aLBF_f,',',false));
 	program.help_text_var("_Default_plot_to",plot_f);
 	program.help_text_var("_Default_biol",biol_f);
+	program.help_text_var("_Default_gba_show",biol_s);
 	program.help_text_var("_Default_dgd",DGD_in);
 	program.help_text_var("_Default_rvis",ftos(NoRVIS));
 	program.help_text_var("_Default_neg_biol",str_YesOrNo(NegGBA));
@@ -146,7 +149,8 @@ int main (int argc, char * const argv[])
 		lns<<showl<<"The --group option will be ignored for --vc."<<flush_logger;
 	}
 	for (auto &f:inGSet) f=perch::find_file(f);
-	
+	STAT::StatType  gba_stat=to_StatType(biol_s);
+
 	// about normalization
 	// STAT use MED_POS is better than MAD because
 	// 1) it's more meaningful to compute deviation from 0 rather than median;
@@ -543,7 +547,7 @@ int main (int argc, char * const argv[])
 				grpGBAval[current_group].push_back(v);
 			}
 			if (grpGBAval[current_group].empty())	lbfGBA[current_group]=0;
-			else 									lbfGBA[current_group]=grpGBAval[current_group].get(STAT::MAX);
+			else 									lbfGBA[current_group]=grpGBAval[current_group].get(gba_stat);
 		}
 		for (X_it(j)){double v=aLBF_s[j][current_group]; double v0=l_X[j][current_group]; if (!std::isnan(v)&&(v>v0||v0==0)) l_X[j][current_group]=v;} // higest score among this group (domain/gene/pathway)
 		//if (HasGBA) { double v=SymbToGBA[GeneSymbol];    double v0=lbfGBA[current_group]; if (!std::isnan(v)&&(v>v0||v0==0)) lbfGBA[current_group]=v;} // higest score among this group (domain/gene/pathway)
