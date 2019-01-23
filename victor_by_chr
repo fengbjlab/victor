@@ -1,0 +1,195 @@
+#! /usr/bin/env bash
+
+# ======= Begin of helps =======
+
+# This script does genotype- and variant-wise QC, phasing, MNP merging, annotation, and gene prioritization FOR 1 CHROMOSOME starting from a VCF.
+# It requires ShapeIt (shapeit.fr), BEAGLE(washington.edu), PERCH (bjfenglab.org), VANNER (bjfenglab.org), and tabix (github.com/samtools/tabix).
+# Do not run multiple instances simultaneously in one computer node for section 1 and 2, as this script already employs multithreading parallelism. 
+# You can run multiple instances simultaneously in one computer node for section 3-5, but the stdout and stderr will tango.
+# To do gene network or structural variation analysis, you need to do gnGBA or vSVA before running this script, then set the appropriate parameters.
+# To skip QC, set INP=xxx.qc.xxx; to skip MNP merging, set INP=xxx.phased.mnp.xxx; to skip annotation, set INP=xxx.ann.xxx; 
+
+# (C) Bingjian Feng 2015-2017
+
+# Below are the parameters and their descriptions. You must specify the mandatory ones.
+INP=${INP:-}                    # Input Genotype File  (mandatory, for one chromosome, gzip or bgzip compressed)
+SPL=${SPL:-}                    # Input Sample File    (mandatory, include case-control, duplicated samples, other individuals in $PED. Used by vQC and vAAA.)
+PED=${PED:-}                    # Input Pedigree File  (optional) will be used by vQC and vSEG, but not vAAA
+QC1=${QC1:-}                    # 1st vQC   parameters (optional) For QC before phasing
+QC2=${QC2:-}                    # 2nd vQC   parameters (optional) For QC after phasing
+VAG=${VAG:-}                    # vAnnGene  parameters (optional)
+VAM=${VAM:-}                    # ann MaxAF parameters (optional)
+DEL=${DEL:-}                    # vDEL      parameters (optional)
+AAA=${AAA:-}                    # vAAA      parameters (optional)
+SEG=${SEG:-}                    # vSEG      parameters (optional) "no" means do not do linkage analysis even if there's a pedigree file
+FIN=${FIN:-}                    # vFIN      parameters (optional)
+ADF=${ADF:-}                    # F 4 vAnnDomain --ann (optional) do nothing if empty. Suggest @GDB_InterPro
+MAP=${MAP:-}                    # Path to genetic map  (optional, but mandatory if PHASING=ShapeIt. filenames are $MAP/genetic_map_chr$CHR.txt)
+BGL=${BGL:-}                    # BEAGLE path options  (optional, but mandatory if PHASING=BEAGLE. E.g., BGL="/path/to/beagle.r1399.jar ped=pedigrees.txt")
+AN1=${AN1:-}                    # vAnnDel 1 parameters (optional) annotation field cannot be named MaxAF!!!
+AN2=${AN2:-}                    # vAnnDel 2 parameters (optional) annotation field cannot be named MaxAF!!!
+AN3=${AN3:-}                    # vAnnDel 3 parameters (optional) annotation field cannot be named MaxAF!!!
+AN4=${AN4:-}                    # vAnnDel 4 parameters (optional) annotation field cannot be named MaxAF!!!
+AN5=${AN5:-}                    # vAnnDel 5 parameters (optional) annotation field cannot be named MaxAF!!!
+PMT=${PMT:-}                    # no. of permutations  (optional)
+KEEP_COMMON=${KEEP_COMMON:-0.2} # Keep var Max_AF>0.2  (optional)
+PROV_INDEL_1=${PROV_INDEL_1:-InDels.provean.tsv.gz}  # (optional) pre-computed PROVEAN scores for known InDels
+PROV_INDEL_2=${PROV_INDEL_2:-}  # data file            (optional) pre-computed PROVEAN scores for known InDels
+PROV_FILL_MS=${PROV_FILL_MS:-}  # data file            (optional) PROVEAN scores for the remaining InDels calculated by the user
+STEP1_ONLY=${STEP1_ONLY:-no}    # Do step 1 only       (optional) yes/no            (any other string including an empty string means no)
+PHASING=${PHASING:-no}          # Do section 2 phasing (optional) ShapeIt/BEAGLE/no (any other string including an empty string means no)
+NO_PERCH=${NO_PERCH:-no}        # Do not do section 5  (optional) yes/no            (any other string including an empty string means no)
+USE_TABIX=${USE_TABIX:-no}      # Use tabix            (optional) yes/no            (any other string including an empty string means no)
+QC_ONLY=${QC_ONLY:-no}          # For backward compatibility
+if [ "$QC_ONLY" == yes ]; then STEP1_ONLY=yes; fi
+
+# =============== End of helps ===============
+
+if [ "$INP" == "" ]; then >&2 echo 'victor_by_chr: !!! Error: Input file (INP) not set. Aborting.'; exit 1; 
+elif [ ! -s "$INP" ]; then >&2 echo 'victor_by_chr: !!! Error: Input File '"$INP not exist or empty. Aborting."; exit 1; fi
+if [ "$PHASING" == ShapeIt ] && [ "$MAP" == "" ]; then >&2 echo 'victor_by_chr: !!! Error: MAP not set. Aborting.'; exit 1; fi
+if [ "$PHASING" == BEAGLE  ] && [ "$BGL" == "" ]; then >&2 echo 'victor_by_chr: !!! Error: BGL not set. Aborting.'; exit 1; fi
+
+function timer()
+{
+    if [[ $# -eq 0 ]]; then
+        echo $(date '+%s')
+    else
+        local  stime=$1
+        etime=$(date '+%s')
+        if [[ -z "$stime" ]]; then stime=$etime; fi
+        dt=$((etime - stime))
+        ds=$((dt % 60))
+        dm=$(((dt / 60) % 60))
+        dh=$((dt / 3600))
+        printf '%d:%02d:%02d' $dh $dm $ds
+    fi
+}
+_Time=$(timer)
+
+if [ "$USE_TABIX" == yes ]; then TABIX="--use-tabix=yes"; fi
+
+# Section 1 (step 1): ID, functional consequence, BayesDel and MaxAF annotation, and then quality control.
+# After this section, a xxx.for_PROV file will be created. Annotate PROVEAN for this file and put the results in the PROV_FILL_MS for section 4 below.
+if [[ "$INP" != *.qc.* ]]; then
+  CHR=`zcat $INP | grep -v ^# | head -1 | cut -f 1`
+  if [ "$CHR" != X ] && [ "$CHR" != Y ] && [ "$CHR" != M ]; then RMII="--rm-ii-MaxAF-lt=$KEEP_COMMON --bdel-cutoff=-0.0592577"; fi
+  if [ -s "$PED" ]; then PED_OPT="--ped=$PED"; fi
+  NEW_PFX=`echo ${INP%.vcf.gz} | sed 's/.*\///g'`
+  vSPLIT $INP | sed 's/^chr//' |\
+  vAnnGene --norm-only --rm-big-indel 50 $VAG | vAnnDel --ann=dbSNP --ms=index $TABIX |\
+  vAnnGene --no-filter --no-split --add-info --up=3000 --dn=1000 --splice-5i=25 --splice-3i=-25 --info-func=vAnnGeneAll --log=$NEW_PFX.ann.log $VAG |\
+  vAnnDel -q --add-info --ann=MaxAF_20170801.gz --add-ms $TABIX $VAM |\
+  vAnnBase   --add-info --ann=BayesDel_nsfp33a_noAF -x=3 --min=-1.5 --step=0.01 --indel=max --padding=1 |\
+  vAnnDel -q --add-info --ann=$PROV_INDEL_1 -f 5 --wr=PROVEAN --preload --indel-only |\
+  vAnnDel -q --add-info --ann=$PROV_INDEL_2 -f 5 --wr=PROVEAN --preload --indel-only |\
+  vDEL --no-sort --check-ms=$NEW_PFX --info-func=vAnnGeneAll |\
+  vQC --spl=$SPL $PED_OPT --info-func vAnnGeneAll $RMII --nt=auto-10 $QC1 | bgzip -c > $NEW_PFX.qc.vcf.gz
+  tabix -f -p vcf $NEW_PFX.qc.vcf.gz
+  if [ -s $NEW_PFX.ann.log ]; then >&2 echo 'victor_by_chr: Warning: some variants have problems. Please check '$NEW_PFX.ann.log; 
+  else rm -f $NEW_PFX.ann.log; fi
+  >&2 echo "victor_by_chr: "`date`" Finished QC for $INP ("$(timer $_Time)")" && _Time=$(timer)
+  if [ "$STEP1_ONLY" == yes ]; then exit 0; fi
+  INP=$NEW_PFX.qc.vcf.gz
+fi
+
+# Section 2 (step 2): phasing and multi-nucleotide polymorphisms (MNP) merging
+if [[ "$INP" != *.phased.mnp.* ]]; then
+  if [ -s "$PED" ]; then PED_OPT="--ped=$PED"; fi
+  NEW_PFX=`echo ${INP%.vcf.gz} | sed 's/.*\///g'`
+  if [ `zcat $INP | grep -v ^# | wc -l` -gt 0 ]; then
+    if [ "$PHASING" == ShapeIt ]; then
+      if [ "$MAP" == "" ]; then >&2 echo 'victor_by_chr: !!! Error: MAP not set. Aborting.'; exit 1; fi
+      CHR=`zcat $INP | grep -v ^# | head -1 | cut -f 1`
+      if [ "$CHR" == X ]; then XCHR="--chrX"; else XCHR=""; fi
+      TMP=`mktemp XXXXXXXXXX`
+      shapeit -V $INP $XCHR \
+              -M $MAP/genetic_map_chr$CHR.txt \
+              -O $TMP.phased \
+              --thread $((`nproc`-2)) >/dev/null
+      vPHASE $TMP.phased.haps $INP | gzip -c > $NEW_PFX.phased.vcf.gz
+      rm -f $TMP*
+      >&2 echo "victor_by_chr: "`date`" Finished phasing $INP ("$(timer $_Time)")" && _Time=$(timer)
+      vMNP $NEW_PFX.phased.vcf.gz |\
+      vAnnDel --add-info --ann=MaxAF_20170801.gz --add-ms $VAM --use-tabix --replace=no |\
+      vAnnBase --add-info --ann=BayesDel_nsfp33a_noAF -x=3 --min=-1.5 --step=0.01 --indel=max --padding=1 |\
+      vQC --spl=$SPL $PED_OPT --qc-mnp-only=yes --nt=auto-6 $QC2 | gzip -c > $NEW_PFX.phased.mnp.vcf.gz
+      rm -f $NEW_PFX.phased.vcf.gz
+      >&2 echo "victor_by_chr: "`date`" Finished merging MNPs for $INP ("$(timer $_Time)")" && _Time=$(timer)
+      INP=$NEW_PFX.phased.mnp.vcf.gz
+    elif [ "$PHASING" == BEAGLE ]; then
+      java -jar $BGL gt=$INP out=$NEW_PFX.phased nthreads=$((`nproc`-2)) >$NEW_PFX.log
+      >&2 echo "victor_by_chr: "`date`" Finished phasing $INP ("$(timer $_Time)")" && _Time=$(timer)
+      zcat $INP | grep -v ^## | cut -f 1,2,4,5,8 | bgzip -c > $NEW_PFX.info.gz
+      tabix -f -p vcf $NEW_PFX.info.gz
+      vAnnDel -q $NEW_PFX.phased.vcf.gz --ann=$NEW_PFX.info.gz |\
+      vMNP |\
+      vAnnDel --add-info --ann=MaxAF_20170801.gz --add-ms $VAM --use-tabix --replace=no |\
+      vAnnBase --add-info --ann=BayesDel_nsfp33a_noAF -x=3 --min=-1.5 --step=0.01 --indel=max --padding=1 |\
+      vQC --spl=$SPL $PED_OPT --qc-mnp-only=yes --nt=auto-6 $QC2 | gzip -c > $NEW_PFX.phased.mnp.vcf.gz
+      rm -f $NEW_PFX.phased.vcf.gz $NEW_PFX.info.gz*
+      >&2 echo "victor_by_chr: "`date`" Finished merging MNPs for $INP ("$(timer $_Time)")" && _Time=$(timer)
+      INP=$NEW_PFX.phased.mnp.vcf.gz
+    fi
+  else
+    if [ "$PHASING" == ShapeIt ] || [ "$PHASING" == BEAGLE ]; then
+      cp $INP $NEW_PFX.phased.mnp.vcf.gz
+      INP=$NEW_PFX.phased.mnp.vcf.gz
+    fi
+  fi
+fi
+
+# Section 3 (step 2): functional consequence annotation
+if [[ "$INP" != *.ann.* ]]; then
+  NEW_PFX=`echo ${INP%.vcf.gz} | sed 's/.*\///g'`
+  if [[ "$VAG" == *"--do-nothing"* ]]; then 
+    zcat $INP | sed 's/vAnnGeneAll/vAnnGene/g' | gzip -c > $NEW_PFX.ann.gz
+  else
+    vAnnGene $INP --all-ann=vAnnGeneAll $VAG | vAnnDomain --ann=$ADF | gzip -c > $NEW_PFX.ann.gz
+  fi
+  >&2 echo "victor_by_chr: "`date`" Finished functional annotation for $INP ("$(timer $_Time)")" && _Time=$(timer)
+  INP=$NEW_PFX.ann.gz
+fi
+
+# Section 4 (step 2): fill in missing PROVEAN, calculate BayesDel (1. considering PROVEAN for all in-frame indels; and 2. considering functional consequence)
+if [[ "$INP" == *.ann.gz ]]; then
+  NEW_PFX=`echo ${INP%.ann.gz} | sed 's/.*\///g'`
+  if [[ "$PROV_FILL_MS" == *.result.one.tsv.gz ]]; then
+    if [ ! -s $PROV_FILL_MS ]; then >&2 echo 'victor_by_chr: !!! Error: File '"$PROV_FILL_MS not found or empty. Aborting."; exit 1; fi
+    gunzip $PROV_FILL_MS
+    PROV_FILL_MS=${PROV_FILL_MS%.gz}
+  fi
+  if [[ "$PROV_FILL_MS" == *.result.one.tsv ]]; then
+    if [ ! -s $PROV_FILL_MS ]; then >&2 echo 'victor_by_chr: !!! Error: File '"$PROV_FILL_MS not found or empty. Aborting."; exit 1; fi
+    sed 1d $PROV_FILL_MS | cut -f 2,11 | grep -v NA | grep -v $'\t$' | tr , '\t' |\
+    sort -k 1,1 -k 2,2n -k 3,3 -k 4,4 | sed '1s/^/#CHROM\tPOS\tREF\tALT\tPROVEAN\n/' | bgzip -c > $NEW_PFX.ann_PROV.gz
+    tabix -f -p vcf $NEW_PFX.ann_PROV.gz
+    PROV_FILL_MS=$NEW_PFX.ann_PROV.gz
+  fi
+  if [ "$PROV_FILL_MS" != "" ] && [ ! -s "$PROV_FILL_MS" ]; then 
+    >&2 echo 'victor_by_chr: !!! Error: File '"$PROV_FILL_MS not found or empty. Aborting."
+    exit 1
+  fi
+  vAnnDel -q --add-info --indel-only --ann=$PROV_FILL_MS --preload -f 5 --wr=PROVEAN $INP |\
+  vAnnDel -q --add-info $TABIX $AN1 |\
+  vAnnDel -q --add-info $TABIX $AN2 |\
+  vAnnDel -q --add-info $TABIX $AN3 |\
+  vAnnDel -q --add-info $TABIX $AN4 |\
+  vAnnDel -q --add-info $TABIX $AN5 |\
+  vDEL --add-af $DEL | gzip -c > $NEW_PFX.ann.del.gz
+  >&2 echo "victor_by_chr: "`date`" Finished filling in missing PROVEAN for $INP ("$(timer $_Time)")" && _Time=$(timer)
+  INP=$NEW_PFX.ann.del.gz
+fi
+
+# Section 5 (step 3): gene prioritization / variant prioritization / variant classification by PERCH
+if [[ "$INP" != *.perch.* ]] && [ "$NO_PERCH" != yes ]; then
+  NEW_PFX=`echo ${INP%.gz} | sed 's/.*\///g'`
+  if [ "$PMT" != "" ]; then
+    vAAA $INP --spl=$SPL $AAA --permute $PMT > $NEW_PFX.perm
+  else
+    if [ -s "$PED" ] && [ "$SEG" != no ]; then vSEG $INP --ped=$PED $SEG | vAAA      --spl=$SPL $AAA | gzip -c > $NEW_PFX.perch.gz
+    else                                                                   vAAA $INP --spl=$SPL $AAA | gzip -c > $NEW_PFX.perch.gz; fi
+    if [ "$FIN" != no ]; then vFIN $NEW_PFX.perch.gz $FIN > $NEW_PFX.perch.txt; fi # removed "sort -k4 -r -n" because of the header line
+  fi 
+  >&2 echo "victor_by_chr: "`date`" Finished gene prioritization for $INP ("$(timer $_Time)")" && _Time=$(timer)
+fi

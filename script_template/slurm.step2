@@ -1,0 +1,122 @@
+#!/bin/bash
+#SBATCH --time=72:00:00
+#SBATCH --output=%x.%a.stdout
+#SBATCH --error=%x.%a.stderr
+#SBATCH --array=1-25
+#SBATCH --ntasks-per-node=1
+
+# About:
+# This script submits MULTIPLE jobs to a computer cluster to do QC, annotation, and PERCH analysis starting from a raw VCF file.
+# This file is more readable if the text editor or terminal width is at least 160 characters.
+# Comments starting with ### are suggested manual operations.
+
+# Usage:
+# 1. Add /path/to/VICTOR to your PATH.
+# 2. Copy this scrip to a working directory where you have write permissions to. Optionally, put a par.txt in the same working directory if necessary.
+# 3. Optionally, add #SBATCH options above. Such as --account --partition --mail-user --mail-type.
+# 4. Set parameters including "Set PATH" and "Main Parameters" .
+# 5. Submit jobs by "victor.sbatch slurm.step2" to analyze all chromosomes; or "victor.sbatch --array=# slurm.step2" to analyze one chromosome.
+
+# Commands to check errors after running a job (please replace # with the SLURM_ARRAY_TASK_ID):
+#   ERROR_TEXT="error\|throwing\|exception\|what()\|Killed\|slurmstepd\|NODE_FAIL\|Broken pipe\|too many arguments\|segmentation\|reindex\|Aborted"
+#   grep -i "$ERROR_TEXT" slurm.step2.*.stderr
+# Commands to check warnings:
+#   grep -i warning slurm.step2.*.stderr
+# Commands to see what have been done:
+#   grep -i completed slurm.step2.*.stderr
+
+# ----------------------------------------------------------------- beginning_of_parameters -----------------------------------------------------------------
+
+# Set PATH.
+# If you have not added VICTOR to your PATH, un-comment the following line and replace /path/to; otherwise, no need to do anything.
+#   export PATH=/path/to/VICTOR:$PATH
+
+# Check whether PATH is set correctly.
+VICTOR_PATH=`which vAnnGene | sed 's;/vAnnGene$;;'`
+if [ "$SLURM_JOB_NAME" == "" ]; then SLURM_JOB_NAME=`basename "$0"`; fi
+if [ "$VICTOR_PATH" == "" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: path to VICTOR is not set'; exit 1; fi
+
+# Main Parameters. Values are filenames or program options. Leave it blank if there's nothing to set or you don't know what to do.
+# If an input file is not in the working directory, use full path or relative path. Remember to quote if the argument contains a space.
+export OUT=VICTOR                         # mandatory, output prefix
+export SPL=../files/samples.txt           # mandatory, sample file. Sample ID should not contain an equals sign (=) or semicolon (;) or comma (,).
+export PED=../files/pedigrees.txt         # optional, pedigree file.
+export VAM=                               # optional. parameters for MaxAF annotation by vAnnDel.
+export PHA=no_phasing                     # optional, how to phase the genotypes (ShapeIt or BEAGLE; anything else means "no phasing")
+export MAP=/path/to/genetic/map           # optional, but mandatory if PHA=ShapeIt
+export BGL="/path/to/beagle.jar ped=$PED" # optional, but mandatory if PHA=BEAGLE
+export QC2=                               # optional, parameters for quality control by vQC after phasing
+export ADF=                               # optional. parameters for vAnnDomain --add (do nothing if empty).
+export VAG=                               # optional, parameters for gene annotation by vAnnGene
+export DEL=                               # optional, parameters for BayesDel calculation by vDEL
+export PVN=                               # optional, PROVEAN scores for new indels
+
+# -------------------------------------------------------------------- end_of_parameters --------------------------------------------------------------------
+
+# Check parameters
+if [ "$OUT" == "" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: OUT in the "Main Parameters" cannot be empty'; exit 1; fi
+if [ "$SPL" == "" ] && [ "$QC2" != "--do-nothing" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: SPL in the "Main Parameters" cannot be empty'; exit 1; fi
+if [ "$SPL" != "" ] && [ ! -s "$SPL" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$SPL' not exist or empty.'; exit 1; fi
+if [ "$PED" != "" ] && [ ! -s "$PED" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$PED' not exist or empty.'; exit 1; fi
+if [ "$PHA" == ShapeIt ] && [ "$MAP" == "" ]; then >&2 echo $SLURM_JOB_NAME': !!! Error: MAP not set.'; exit 1; fi
+if [ "$PHA" == BEAGLE  ] && [ "$BGL" == "" ]; then >&2 echo $SLURM_JOB_NAME': !!! Error: BGL not set.'; exit 1; fi
+
+# Begin of job
+if [ "$SLURM_ARRAY_TASK_ID" == "" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: SLURM_ARRAY_TASK_ID not defined'; exit 1; fi
+if   [ $SLURM_ARRAY_TASK_ID == 1  ]; then CHR=1
+elif [ $SLURM_ARRAY_TASK_ID == 2  ]; then CHR=2
+elif [ $SLURM_ARRAY_TASK_ID == 3  ]; then CHR=3
+elif [ $SLURM_ARRAY_TASK_ID == 4  ]; then CHR=4
+elif [ $SLURM_ARRAY_TASK_ID == 5  ]; then CHR=5
+elif [ $SLURM_ARRAY_TASK_ID == 6  ]; then CHR=6
+elif [ $SLURM_ARRAY_TASK_ID == 7  ]; then CHR=7
+elif [ $SLURM_ARRAY_TASK_ID == 8  ]; then CHR=8
+elif [ $SLURM_ARRAY_TASK_ID == 9  ]; then CHR=9
+elif [ $SLURM_ARRAY_TASK_ID == 10 ]; then CHR=10
+elif [ $SLURM_ARRAY_TASK_ID == 11 ]; then CHR=11
+elif [ $SLURM_ARRAY_TASK_ID == 12 ]; then CHR=12
+elif [ $SLURM_ARRAY_TASK_ID == 13 ]; then CHR=13
+elif [ $SLURM_ARRAY_TASK_ID == 14 ]; then CHR=14
+elif [ $SLURM_ARRAY_TASK_ID == 15 ]; then CHR=15
+elif [ $SLURM_ARRAY_TASK_ID == 16 ]; then CHR=16
+elif [ $SLURM_ARRAY_TASK_ID == 17 ]; then CHR=17
+elif [ $SLURM_ARRAY_TASK_ID == 18 ]; then CHR=18
+elif [ $SLURM_ARRAY_TASK_ID == 19 ]; then CHR=19
+elif [ $SLURM_ARRAY_TASK_ID == 20 ]; then CHR=20
+elif [ $SLURM_ARRAY_TASK_ID == 21 ]; then CHR=21
+elif [ $SLURM_ARRAY_TASK_ID == 22 ]; then CHR=22
+elif [ $SLURM_ARRAY_TASK_ID == 23 ]; then CHR=X
+elif [ $SLURM_ARRAY_TASK_ID == 24 ]; then CHR=Y
+elif [ $SLURM_ARRAY_TASK_ID == 25 ]; then CHR=M
+else echo "wrong SLURM_ARRAY_TASK_ID $SLURM_ARRAY_TASK_ID"; exit; fi
+
+JOB_DIR=`pwd`
+JOB_LOG=$JOB_DIR/$SLURM_JOB_NAME.${SLURM_ARRAY_TASK_ID}
+if [ -s $JOB_DIR/$SLURM_JOB_NAME ]; then cp $JOB_DIR/$SLURM_JOB_NAME $JOB_LOG.script; fi
+if [ -s par.txt ]; then cp par.txt $JOB_LOG.par; fi
+echo "# $(date)"                                             > $JOB_LOG.start
+echo "# SLURM_JOBID = $SLURM_JOBID"                         >> $JOB_LOG.start
+echo "# SLURM_NODELIST = $SLURM_NODELIST"                   >> $JOB_LOG.start
+echo "# To abort this job: cat $JOB_LOG.start | bash"       >> $JOB_LOG.start
+echo "scancel ${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}" >> $JOB_LOG.start
+
+OS=`uname | tr '[:upper:]' '[:lower:]'`
+if   [[ "$OS" == 'linux' ]]; then  PRFX=`mktemp --tmpdir=. XXXXXXXXXX` && PRFX=${PRFX:2}
+elif [[ "$OS" == 'darwin' ]]; then PRFX=`mktemp            XXXXXXXXXX`
+else echo "unknown OS $OS"; exit 1; fi
+export STDERR_MUTEX=$PRFX
+
+INP=$OUT.chr$CHR.qc.vcf.gz PROV_FILL_MS=$PVN VAG="--log=$OUT.chr$CHR.ann.log.gz $VAG" ADF=$ADF DEL=$DEL \
+SPL=$SPL PED=$PED MAP=$MAP BGL=$BGL PHASING=$PHA VAM=$VAM QC2=$QC2 NO_PERCH=yes victor_by_chr
+if [ "$PHA" == ShapeIt ] || [ "$PHA" == BEAGLE ]; then
+  rm $OUT.chr$CHR.qc.phased.mnp.ann.gz
+  rm $OUT.chr$CHR.qc.phased.mnp.vcf.gz
+  mv $OUT.chr$CHR.qc.phased.mnp.ann.del.gz $OUT.chr$CHR.qc.ann.del.gz
+else
+  rm $OUT.chr$CHR.qc.ann.gz
+fi
+
+# All completed.
+echo >&2 $SLURM_JOB_NAME': STEP_2 completed'
+rm -f $PRFX*
+echo '# '$(date) > $JOB_LOG.stop
