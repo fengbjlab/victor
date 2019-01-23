@@ -1,6 +1,6 @@
 # VICTOR
 
-VICTOR = variant interpretation for clinical testing or research.
+VICTOR (Variant Interpretation for Clinical Testing Or Research) is a pipeline for the analysis of next-generation sequencing data starting from a multi-sample raw VCF file. It can be used for disease gene discovery research or clinical genetic testing. It is designed to be scalable to whole genome sequencing (WGS) of a large sample of individuals that is typical of a research on a complex disease. It is mostly a self-contained package, whereby the requirement for third-party applications is minimal (see below), and all necessary databases are already included. It provides data updates on a monthly basis.
 
 ### How to download
 
@@ -24,8 +24,8 @@ make clean
 
 ```
 cd victor/data
-./get_GRCh37_inst.sh
-./get_GRCh37_update.sh
+cat get_GRCh37_inst.sh | bash
+cat get_GRCh37_update.sh | bash
 ```
 
 ### Third-party programs
