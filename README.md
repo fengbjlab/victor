@@ -35,6 +35,18 @@ cat get_hg19_inst.sh | bash
 cat get_hg19_update.sh | bash
 ```
 
+### How to get monthly update of data
+
+```
+cd victor/data
+# to get GRCh37
+cat get_GRCh37_update.sh | bash
+# to get GRCh38
+cat get_GRCh38_update.sh | bash
+# to get hg19
+cat get_hg19_update.sh | bash
+```
+
 ### Third-party programs
 
 You need to install the following third-party programs:
