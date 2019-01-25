@@ -20,7 +20,7 @@
  16) provide options (--flip-aff --filt-MaxAF --filt-FdrAF --filt-del) to search for protective genes.
  17) jointly consider large deletions while analyzing small variants.
  18) gene set analysis
-
+ 
  Input: study data contain cases and controls.
  Input: must contain Func_Gene & is sorted. Use them to identify variant groups.
  Input: must contain Chr,Start,End,Ref,Alt. Use them to identify variant duplicates.
@@ -2094,31 +2094,14 @@ int main (int argc, char * const argv[])
 	}
 	
 	// read sample file
-	set< string >					h_csID;			// SeqID of cases
-	set< string >					h_ctID;			// SeqID of controls
-	map< string, int >				SexMap;			// SeqID => gender (1 for male, 2 for female)
-	map< string, double >			DepMap;			// SeqID => dependent variable
-	map< string, string >			StrMap;			// SeqID => strata
-	map< string, vector<double> >	CovMap;			// SeqID => covariate for analysis, [c] is the same as CovVar CovNID
+	set< string >					h_csID;	// SeqID of cases
+	set< string >					h_ctID;	// SeqID of controls
+	map< string, int >				SexMap;	// SeqID => gender (1 for male, 2 for female)
+	map< string, double >			DepMap;	// SeqID => dependent variable
+	map< string, string >			StrMap;	// SeqID => strata
+	map< string, vector<double> >	CovMap;	// SeqID => covariate for analysis, [c] is the same as CovVar CovNID
 	if (!spl_in.empty())
 	{
-		map< string, vector<string> >	CovRaw;		// SeqID => covariate column => value string
-		vector<string>					CovNam;		//			covariate column => name
-		vector< int >					CovIaN;		// 			covariate column => number of numbers
-		vector< map<string,int> >		CovNaN;		// 			covariate column => string => number of observations
-		vector< int >					CovIgn;		// 			covariate column => to ignore if 1
-		int spl_wrn_1 = elog.get_token("samples omitted due to a missing value for the outcome variable.");
-		int spl_wrn_2 = elog.get_token("samples omitted due to a missing value for a covariate.");
-
-		int			cols=0;		// number of columns
-		const int	covBgn=3;	// covariates start from this column (0-based)
-		const int	minCol=3;	// minimum number of columns in a sample file
-		const int	Spl_ID=0;	// 0-based column number for SeqID
-		const int	SplSex=1;	// 0-based column number for Sex
-		const int	SplAff=2;	// 0-based column number for Aff
-		int			SplPop=0;	// 0-based column number for Pop (0=not provided, since SeqID is 0)
-		bool		HasPop=false; // Sample File contains the population origin information provided by the user
-
 		if (ToWait)
 		{
 			string first_line;
@@ -2126,119 +2109,12 @@ int main (int argc, char * const argv[])
 			if (first_line!="## vSIM created genotype file")
 				exit_error("Don't use --wait if genotype file is not in standard input or not created by vSIM.");
 		}
-		for (Rows_in_File(in,spl_in,0)) // required columns: SeqID Sex Outcome
-		{
-			if (in.RowNumber()==0)
-			{
-				cols=in.NumFields();
-				if (cols<minCol)															exit_error("Insufficient number of columns in the Sample File "+spl_in);
-				boost::to_lower(in[Spl_ID]); if (in[Spl_ID]!="seqid"&&in[Spl_ID]!="sample")	exit_error("The first  column of a Sample File should be SeqID/sample.");
-				boost::to_lower(in[SplSex]); if (in[SplSex]!="sex"&&in[SplSex]!="gender")	exit_error("The second column of a Sample File should be sex/gender.");
-				for (int c=covBgn;c<cols;++c) { string t=boost::to_lower_copy(in[c]); if (t=="_ipop")				{ 				SplPop=c; break; } }
-				for (int c=covBgn;c<cols;++c) { string t=boost::to_lower_copy(in[c]); if (t=="pop"||t=="population"){ HasPop=true;	SplPop=c; break; } }
-				for (int c=covBgn;c<cols;++c)	CovNam.push_back(in[c]);
-				if (cols>covBgn) { CovIaN.assign(cols-covBgn,0); CovNaN.assign(cols-covBgn,map<string,int>()); CovIgn.assign(cols-covBgn,0); }
-				if (HasPop)				{ for (int c=covBgn;c<cols;++c) if (str_startsw(in[c],"_PC_")||in[c]=="_iPop")	CovIgn[c-covBgn]=1; }
-				else if (perch::a_iPop)	{ for (int c=covBgn;c<cols;++c) if (str_startsw(in[c],"_PC_"))					CovIgn[c-covBgn]=1; }
-				else					{ for (int c=covBgn;c<cols;++c) if (in[c]=="_iPop")								CovIgn[c-covBgn]=1; }
-				continue;
-			}
-			if (cols!=in.NumFields()) exit_error("inconsistent number of columns in "+spl_in);
-			if (exist_element(SexMap,in[Spl_ID])) exit_error("duplicated sample "+in[Spl_ID]+" in "+spl_in);
-			if (exist_element(perch::rm_ind,in[Spl_ID])) continue; // skip samples to be removed
 
-			int				sex = perch::read_sex(in[SplSex]);
-			double			dep = perch::read_aff(in[SplAff]);
-			vector<double>	cov;
-			SexMap[in[Spl_ID]] = sex;
-			if (std::isnan(dep)) { elog.add(spl_wrn_1); continue; } // skip samples with missing outcome
-			
-			// read covariates, allow strings, DO ignore samples with missing values
-			if (cols>covBgn)
-			{
-				vector<string> cov;
-				bool has_missing=false;	// this individual has at least 1 missing value
-				for (int c=covBgn;c<cols;++c)
-				{
-					if (CovIgn[c-covBgn]) in[c]="1";
-					boost::to_upper(in[c]);
-					if (in[c]=="" || in[c]=="." || in[c]=="UNKNOWN") has_missing=true;
-					else
-					{
-						cov.push_back(in[c]);
-						double val=std::numeric_limits<double>::signaling_NaN();
-						if (ReadStr(in[c],val,0) && !std::isnan(val)) CovIaN[c-covBgn]++;
-						else CovNaN[c-covBgn][in[c]]++;
-					}
-				}
-				if (has_missing) 	{ elog.add(spl_wrn_2); continue; } // skip samples with missing covariate
-				else				CovRaw[in[Spl_ID]]=cov;
-			}
-			
-			// update
-			if (dep==1) h_ctID.insert(in[Spl_ID]);
-			else		h_csID.insert(in[Spl_ID]);
-			DepMap[in[Spl_ID]]=dep;
-		}
-		
-		// convert string covariates to numeric covariates
-		vector<string> effective_covariates;
-		for (size_t i=0;i<CovIaN.size();++i)
-		{
-			if (CovIaN[i]==0 &&  CovNaN[i].empty()) exit_error("covariates in a Sample File cannot be missing for all samples.");
-			if (CovIaN[i]!=0 && !CovNaN[i].empty()) exit_error("covariates in a Sample File must be either strings or numbers, but cannot be both.");
-			set<string> uniq_strings;
-			for (auto &j:CovRaw) uniq_strings.insert(j.second[i]);
-			if (uniq_strings.size()==1) continue;
-			effective_covariates.push_back(CovNam[i]);
-			if (CovIaN[i]!=0)
-			{
-				if (str_startsw(CovNam[i],"_")) CovNID.push_back("X"+CovNam[i]); else CovNID.push_back(CovNam[i]);
-				for (auto &j:CovRaw)
-				{
-					double val=std::numeric_limits<double>::signaling_NaN();
-					ReadStr(j.second[i],val,0);
-					CovMap[j.first].push_back(val);
-				}
-			}
-			else
-			{
-				string 	max_str;
-				int 	max_val=-1;
-				for (auto &v:CovNaN[i])
-					if (v.second>max_val) { max_str=v.first; max_val=v.second; }
-				for (auto &v:CovNaN[i])
-				{
-					if (v.first==max_str) continue;
-					if (str_startsw(CovNam[i],"_")) CovNID.push_back("X"+CovNam[i]+"_"+v.first); else CovNID.push_back(CovNam[i]+"_"+v.first);
-					for (auto &j:CovRaw)
-					{
-						if (j.second[i]==v.first) 	CovMap[j.first].push_back(1);
-						else 						CovMap[j.first].push_back(0);
-					}
-				}
-			}
-		}
-		if (!effective_covariates.empty()) lns<<showl<<"Effective covariates include "<<str_of_container(effective_covariates,',')<<flush_logger;
-		
-		// convert aff=1/2 to aff=0/1 for case-control data
-		if (!perch::is_qtl())
-			for (auto &i:DepMap) i.second-=1;
-
-		// make StrMap, check number of strata, ignore covariates for SSU
-		if (!CovMap.empty())
-		{
-			if (!ExtCT::ExAC_pfx.empty() || (AnalysisMethod==SSU && do_SSUw==&pv_SSUw))
-			{
-				CovMap.clear();
-				lns<<showw<<"Covariates ignored by --SSUw or --xct-pfx analysis."<<flush_logger;
-			}
-			else
-			{
-				for (auto &x:CovMap)
-					StrMap[x.first]=str_of_container(x.second,',');
-			}
-		}
+		set< string >				h_ukID;	// SeqID of unknowns
+		map< string, string> 		PopMap;	// SeqID => population
+		bool						read_cov=true;
+		if (!ExtCT::ExAC_pfx.empty() || (AnalysisMethod==SSU && do_SSUw==&pv_SSUw)) read_cov=false;
+		perch::read_spl(spl_in,true,true,!read_cov,0.0,h_csID,h_ctID,h_ukID,SexMap,DepMap,PopMap,StrMap,CovMap,CovNID);
 	}
 	
 	// read individual weight file
@@ -2828,7 +2704,7 @@ read_VCF:
 			if (FdrAF<skip_if_maf_l) { DefaultJob.qcl.push_back("SKIPPED=UncommonVar"); ExtCT::ExAC_dta[GeneSymbol][VarIndex].clear(); continue; }
 		}
 		
-		// skip by missingness
+		/*/ skip by missingness
 		double MsgAll = (double)(miA+miU) / (iiA+iiU);
 		double MsgCSs = iiA ? (double)miA / iiA : std::numeric_limits<double>::signaling_NaN();
 		double MsgCTs = iiU ? (double)miU / iiU : std::numeric_limits<double>::signaling_NaN();
@@ -2843,7 +2719,7 @@ read_VCF:
 			double zScore = (MsgCSs-MsgCTs) / sqrt(MsgAll*(1-MsgAll)*(1.0/iiA+1.0/iiU));
 			double pValue = cdf_norms_2sided_pv(zScore);
 			if (pValue<=MisPVl) { DefaultJob.qcl.push_back("SKIPPED=MissingRateTest"); ExtCT::ExAC_dta[GeneSymbol][VarIndex].clear(); continue; }
-		}
+		} //*/
 		
 		// skip by --cap. Both --cap and --top must be after all other "continue"s.
 		if (max_pg)

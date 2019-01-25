@@ -1405,6 +1405,7 @@ int main (int argc, char * const argv[])
 	bool			toSwap = false;						// if REF is not correct, swap REF <-> ALT
 	bool			toFlip = false;						// if REF is not correct, flip REF and ALT
 	bool			toKeep = false;						// if REF is not correct, keep the line w/o doing anything and then continue to the next line
+	bool			noCGAT = false;						// remove CG or AT snp
 	bool			do_nothing=false;
 	bool			SwOrFl = false;						// swap or flip
 	bool			SwAdFl = false;						// swap or flip
@@ -1447,13 +1448,15 @@ int main (int argc, char * const argv[])
 
 		// belows are about REF error checking
 		else if	(str_startsw(program.arg()[argi],"--check"))		ReadArg(program.arg(),argi,chkref); // default is true
-		else if	(str_startsw(program.arg()[argi],"--rm"))		{	ReadArg(program.arg(),argi,RRonly); if (RRonly) { l_norm=false; r_norm=false; f_norm=false; } }
-		else if	(str_startsw(program.arg()[argi],"--fix"))		{	ReadArg(program.arg(),argi,CRonly); if (CRonly) { l_norm=false; r_norm=false; f_norm=false; } }
-		else if	(str_startsw(program.arg()[argi],"--swap"))		{	ReadArg(program.arg(),argi,toSwap); SwapFlip.push_back('1'); }
-		else if	(str_startsw(program.arg()[argi],"--flip"))		{	ReadArg(program.arg(),argi,toFlip); SwapFlip.push_back('2'); }
-		else if	(str_startsw(program.arg()[argi],"--keep"))			ReadArg(program.arg(),argi,toKeep);
-		else if	(str_startsw(program.arg()[argi],"--or"))			ReadArg(program.arg(),argi,SwOrFl);
-		else if	(str_startsw(program.arg()[argi],"--and"))			ReadArg(program.arg(),argi,SwAdFl);
+		else if	(str_startsw(program.arg()[argi],"--rm"))		{	ReadArg(program.arg(),argi,RRonly); if (RRonly) { chkref=true; } }
+		else if	(str_startsw(program.arg()[argi],"--fix"))		{	ReadArg(program.arg(),argi,CRonly); if (CRonly) { chkref=true; } }
+		else if	(str_startsw(program.arg()[argi],"--swap"))		{	ReadArg(program.arg(),argi,toSwap); if (toSwap) { chkref=true; } SwapFlip.push_back('1'); }
+		else if	(str_startsw(program.arg()[argi],"--flip"))		{	ReadArg(program.arg(),argi,toFlip); if (toFlip) { chkref=true; } SwapFlip.push_back('2'); }
+		else if	(str_startsw(program.arg()[argi],"--keep"))		{	ReadArg(program.arg(),argi,toKeep); if (toKeep) { chkref=true; } }
+		else if	(str_startsw(program.arg()[argi],"--or"))		{	ReadArg(program.arg(),argi,SwOrFl); if (SwOrFl) { chkref=true; } }
+		else if	(str_startsw(program.arg()[argi],"--and"))		{	ReadArg(program.arg(),argi,SwAdFl); if (SwAdFl) { chkref=true; } }
+		else if	(str_startsw(program.arg()[argi],"--no-cgat"))	{	ReadArg(program.arg(),argi,noCGAT); if (noCGAT) { chkref=true; } }
+		else if	(str_startsw(program.arg()[argi],"--no-atcg"))	{	ReadArg(program.arg(),argi,noCGAT); if (noCGAT) { chkref=true; } }
 
 		else if	(str_startsw(program.arg()[argi],"--norm-only"))	ReadArg(program.arg(),argi,LNonly); // previously --filter= --wr=none
 		else if	(str_startsw(program.arg()[argi],"--sort"))			ReadArg(program.arg(),argi,toSort);
@@ -1529,6 +1532,7 @@ int main (int argc, char * const argv[])
 	program.help_text_var("_Default_cs",str_YesOrNo(toSwap));
 	program.help_text_var("_Default_cf",str_YesOrNo(toFlip));
 	program.help_text_var("_Default_ck",str_YesOrNo(toKeep));
+	program.help_text_var("_Default_no_cgat",str_YesOrNo(noCGAT));
 	program.help_text_var("_Default_LNonly",str_YesOrNo(LNonly));
 	program.help_text_var("_Default_sort",str_YesOrNo(toSort));
 	program.help_text_var("_Default_RRonly",str_YesOrNo(RRonly));
@@ -1549,13 +1553,27 @@ int main (int argc, char * const argv[])
 	
 	// check errors and modify parameters
 	if ((l_norm&&f_norm)||(l_norm&&r_norm)||(r_norm&&f_norm)) exit_error("Only one of --normalize, --func-align, --right-norm can be true at a time.");
-	if ((CRonly&&toSwap)||(CRonly&&toFlip)) 				  exit_error("--fix cannot be used with --swap or --flip.");
-	if ((CRonly&&toKeep)||(toKeep&&toFlip)||(toSwap&&toKeep)) exit_error("--keep cannot be used with --fix or --swap or --flip.");
-	if (toSwap && toFlip && !SwAdFl && !SwOrFl) SwAdFl=true; // turn "--swap --flip" and "--flip --swap" into the same as "xx --and xx".
+	//   ambiguous --fix --rm --swap --flip --keep
+	if (CRonly&&RRonly) exit_error("--fix cannot be used with --rm.");
+	if (CRonly&&toSwap) exit_error("--fix cannot be used with --swap.");
+	if (CRonly&&toFlip) exit_error("--fix cannot be used with --flip.");
+	if (CRonly&&toKeep) exit_error("--fix cannot be used with --keep.");
+	if (RRonly&&toSwap) exit_error("--rm cannot be used with --swap.");
+	if (RRonly&&toFlip) exit_error("--rm cannot be used with --flip.");
+	if (RRonly&&toKeep) exit_error("--rm cannot be used with --keep.");
+	if (toSwap&&toKeep) exit_error("--swap cannot be used with --keep.");
+	if (toFlip&&toKeep) exit_error("--flip cannot be used with --keep.");
+	// usage of --swap --flip:
+	// 1) --swap
+	// 2) --flip
+	// 3) --swap --flip       (order matters, swapping[+flipping])
+	// 4) --swap --or --flip  (order matters, swapping|flipping)
+	// 5) --swap --and --flip (order matters, swapping|flipping|swapping+flipping)
+	if (toSwap && toFlip && !SwAdFl && !SwOrFl) SwAdFl=true; // turn "--swap --flip" and "--flip --swap" into the same as "xx --and xx", ie, remove usage 3.
 	if (SwapFlip.size()>2) exit_error("There should be at most one --swap and one --flip");
-	if (SwOrFl) { if (SwapFlip.size()==2) SwapFlip="||"; else exit_error("--or should be used like this: --swap --or --flip."); }
-	if (SwAdFl) { if (SwapFlip.size()==2) SwapFlip="&&"; else exit_error("--and should be used like this: --swap --and --flip."); }
-	if (LNonly || RRonly || CRonly || toSwap || toFlip) { filter.clear(); }
+	if (SwOrFl) { if (SwapFlip!="12"&&SwapFlip!="21") exit_error("--or should be used like this: \"--swap --or --flip\" or \"--flip --or --swap\"."); }
+	if (SwAdFl) { if (SwapFlip!="12"&&SwapFlip!="21") exit_error("--and should be used like this: \"--swap --and --flip\"."); }
+	if (LNonly || RRonly || CRonly || toSwap || toFlip || toKeep) { filter.clear(); }
 	if (pre_qc) { filter.clear(); noSplt=true; } // 2016-6-27 removed AnnBed.clear(); AnnVar.clear(); AnnSit.clear();
 	if (noFilt) { filter.clear(); filt_benign=false; }
 	string key_del = (AddInf ? "," : DLMTR);
@@ -1606,7 +1624,7 @@ int main (int argc, char * const argv[])
 	map< string, genepi::ChrRegions > AnnReg;	// read annotated chromosomal regions
 	set<string> PrfSymSet;
 	string ParLog;
-	if (!LNonly && !RRonly && !CRonly && !toSwap && !toFlip) // will annotate
+	if (!LNonly && !RRonly && !CRonly && !toSwap && !toFlip && !toKeep) // will annotate
 	{
 		// prepare ParLog, records of parameters that may affect annotation and filtering
 		// still need --up --dn --splice-xx --canonical --gene-file --genes --tx-file --txs --allSpliceLoF
@@ -1761,7 +1779,8 @@ int main (int argc, char * const argv[])
 	field_numbers	Fld_ID(false,true);	// field numb for INFO
 	set<string> prev_index;	// chr-pos-id-ref-alt
 	bool header_not_read = true;
-	int warning1=elog.get_token("lines with wrong REF removed");
+	int warning1=elog.get_token("variants with wrong REF removed");
+	int warning2=elog.get_token("CG/AT SNPs with wrong REF removed");
 	int CADD_column = -2; // -2 = not annotated; -1 = in INFO; 0+ = column.
 	int	FMNC_column = -2; // -2 = not annotated; -1 = in INFO; 0+ = column.
 	int	ColDel = -2; // -2 = not annotated; -1 = in INFO; 0+ = column.
@@ -1834,7 +1853,7 @@ int main (int argc, char * const argv[])
 			if (FldRef.no_input()) exit_error("The REF/Ref column is missing.");
 			if (FldAlt.no_input()) exit_error("The ALT/Alt column is missing.");
 			if (FldInf.no_input()) exit_error("The INFO column is missing.");
-			if (!LNonly && !RRonly && !CRonly && !toSwap && !toFlip)
+			if (!LNonly && !RRonly && !CRonly && !toSwap && !toFlip && !toKeep)
 			{
 				if (AddInf)
 				{
@@ -1879,6 +1898,8 @@ int main (int argc, char * const argv[])
 		}
 		
 		// basic info
+		boost::to_upper(in[FldRef[0]]);
+		boost::to_upper(in[FldAlt[0]]);
 		string ref=in[FldRef[0]];
 		string alt=in[FldAlt[0]];
 		bool is_sv = (str_has(ref,"<") || str_has(alt,"<"));
@@ -1888,11 +1909,13 @@ int main (int argc, char * const argv[])
 		int	bp;			if (!read_val_ge(in[FldPos[0]],bp,1))				exit_error("Failed to read "+in[FldPos[0]]+" as a 1-based bp.");
 		if (ref.empty() || alt.empty()) exit_error("REF or ALT cannot be empty");
 		if (ref==alt) { wr_log("REF=ALT"); continue; } // exit_error("REF and ALT cannot be the same");
+		if (ref!="." && ref!="-") { for (auto &c:ref) if (!isalpha(c)) exit_error("REF "+ref+" contain non-alphabetic character"); }
+		//if (alt!="." && alt!="-") { for (auto &c:alt) if (!isalpha(c)) exit_error("ALT "+alt+" contain non-alphabetic character"); }
 		int b2 = bp;
 
 		if (RRonly || CRonly)
 		{
-			if (ref!="." && ref!="-"  && !str_has(ref,"N"))
+			if (ref!="." && ref!="-") // && !str_has(ref,"N")
 			{
 				string seq = genepi::DNA_seq(chr_num,bp,ref.size());
 				if (ref==seq)
@@ -1934,11 +1957,17 @@ int main (int argc, char * const argv[])
 			SVTYPE = get_string(INFO,"SVTYPE");
 			END = get_string(INFO,"END");
 			if (SVTYPE=="INV"||SVTYPE=="DEL"||SVTYPE=="DUP"||SVTYPE=="CNV") { if (!ReadStr(END,b2,0)) exit_error("Cannot read INFO:END for an SV"); } else b2=bp;
+			if (toSwap || toFlip || toKeep) { print_container(in.contents(),program.outf,DLMTR,true); continue; }
 		}
 		else
 		{
 			if (chkref && ref!="." && ref!="-")
 			{
+				if (noCGAT && ((ref=="C"&&alt=="G")||(ref=="G"&&alt=="C")||(ref=="A"&&alt=="T")||(ref=="T"&&alt=="A")) )
+				{
+					elog.add(warning2);
+					continue;
+				}
 				string seq = genepi::DNA_seq(chr_num,bp,ref.size());
 				if (ref!=seq)
 				{
@@ -1947,7 +1976,7 @@ int main (int argc, char * const argv[])
 					message+="-- "+ref+" should be "+seq;
 					// try to fix wrong REF by either swapping or flipping. If none of them solve all problems, then the problems may be due to
 					// 1) wrong genomic build, or 2) both strand and REF/ALT are wrong. Neither of these can be fixed by a program. They need manual correction.
-					if		(toSwap && !toFlip && alt!="." && alt!="-")
+					if	(toSwap && !toFlip && alt!="." && alt!="-")
 					{
 						seq = genepi::DNA_seq(chr_num,bp,alt.size());
 						if (alt!=seq)	{ lns<<showe<<message<<". Correction by swapping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
@@ -1990,15 +2019,15 @@ int main (int argc, char * const argv[])
 						print_container(in.contents(),program.outf,DLMTR,true);
 						continue;
 					}
-					else if (SwapFlip=="21" && alt!="." && alt!="-")
+					else if (SwapFlip=="21" && !SwOrFl && !SwAdFl && alt!="." && alt!="-")
 					{
 						genepi::dna_rc(ref,true);
 						genepi::dna_rc(alt,true);
 						INFO.push_back("Flip_by_vAnnGene");
 						info_modified=true;
 						if (ref!=seq)	{ seq=genepi::DNA_seq(chr_num,bp,alt.size()); std::swap(ref,alt); INFO.push_back("Swap_by_vAnnGene"); info_modified=true; }
-						if (ref!=seq)	{ lns<<showe<<message<<". Correction by flipping(+swapping) failed"<<flush_logger; wr_log("REF_wrong"); continue; }
-						else			{ lns<<showw<<message<<". Correction by flipping(+swapping) succeeded"<<flush_logger;
+						if (ref!=seq)	{ lns<<showe<<message<<". Correction by flipping[+swapping] failed"<<flush_logger; wr_log("REF_wrong"); continue; }
+						else			{ lns<<showw<<message<<". Correction by flipping[+swapping] succeeded"<<flush_logger;
 							in[FldRef[0]]=ref;
 							in[FldAlt[0]]=alt;
 							if (info_modified)
@@ -2010,15 +2039,15 @@ int main (int argc, char * const argv[])
 						print_container(in.contents(),program.outf,DLMTR,true);
 						continue;
 					}
-					else if (SwapFlip=="12" && alt!="." && alt!="-")
+					else if (SwapFlip=="12" && !SwOrFl && !SwAdFl && alt!="." && alt!="-")
 					{
 						seq=genepi::DNA_seq(chr_num,bp,alt.size());
 						std::swap(ref,alt);
 						INFO.push_back("Swap_by_vAnnGene");
 						info_modified=true;
 						if (ref!=seq)	{ genepi::dna_rc(ref,true); genepi::dna_rc(alt,true); INFO.push_back("Flip_by_vAnnGene"); info_modified=true; }
-						if (ref!=seq)	{ lns<<showe<<message<<". Correction by swapping(+flipping) failed"<<flush_logger; wr_log("REF_wrong"); continue; }
-						else			{ lns<<showw<<message<<". Correction by swapping(+flipping) succeeded"<<flush_logger;
+						if (ref!=seq)	{ lns<<showe<<message<<". Correction by swapping[+flipping] failed"<<flush_logger; wr_log("REF_wrong"); continue; }
+						else			{ lns<<showw<<message<<". Correction by swapping[+flipping] succeeded"<<flush_logger;
 							in[FldRef[0]]=ref;
 							in[FldAlt[0]]=alt;
 							if (info_modified)
@@ -2030,7 +2059,7 @@ int main (int argc, char * const argv[])
 						print_container(in.contents(),program.outf,DLMTR,true);
 						continue;
 					}
-					else if (SwapFlip=="||" && alt!="." && alt!="-")
+					else if (SwapFlip=="12" && SwOrFl && alt!="." && alt!="-")
 					{
 						string seq1=genepi::DNA_seq(chr_num,bp,alt.size());
 						string ref1=ref;
@@ -2057,15 +2086,50 @@ int main (int argc, char * const argv[])
 								info_modified=true;
 							}
 						}
-						if (!info_modified)	{ lns<<showe<<message<<". Correction by swapping | flipping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
-						else				{ lns<<showw<<message<<". Correction by swapping | flipping succeeded"<<flush_logger;
+						if (!info_modified)	{ lns<<showe<<message<<". Correction by swapping|flipping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
+						else				{ lns<<showw<<message<<". Correction by swapping|flipping succeeded"<<flush_logger;
 							in[FldInf[0]] = str_of_container(INFO,';');
 							if (in[FldInf[0]].empty()) in[FldInf[0]]=".";
 							print_container(in.contents(),program.outf,DLMTR,true);
 						}
 						continue;
 					}
-					else if (SwapFlip=="&&" && alt!="." && alt!="-")
+					else if (SwapFlip=="21" && SwOrFl && alt!="." && alt!="-")
+					{
+						string ref2=ref;
+						string alt2=alt;
+						genepi::dna_rc(ref2,true);
+						genepi::dna_rc(alt2,true);
+						if (ref2==seq)
+						{
+							in[FldRef[0]]=ref2;
+							in[FldAlt[0]]=alt2;
+							INFO.push_back("Flip_by_vAnnGene");
+							info_modified=true;
+						}
+						else
+						{
+							string seq1=genepi::DNA_seq(chr_num,bp,alt.size());
+							string ref1=ref;
+							string alt1=alt;
+							std::swap(ref1,alt1);
+							if (ref1==seq1)
+							{
+								in[FldRef[0]]=ref1;
+								in[FldAlt[0]]=alt1;
+								INFO.push_back("Swap_by_vAnnGene");
+								info_modified=true;
+							}
+						}
+						if (!info_modified)	{ lns<<showe<<message<<". Correction by flipping|swapping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
+						else				{ lns<<showw<<message<<". Correction by flipping|swapping succeeded"<<flush_logger;
+							in[FldInf[0]] = str_of_container(INFO,';');
+							if (in[FldInf[0]].empty()) in[FldInf[0]]=".";
+							print_container(in.contents(),program.outf,DLMTR,true);
+						}
+						continue;
+					}
+					else if (SwapFlip=="12" && SwAdFl && alt!="." && alt!="-")
 					{
 						string ref1=ref;
 						string alt1=alt;
@@ -2109,8 +2173,60 @@ int main (int argc, char * const argv[])
 								}
 							}
 						}
-						if (!info_modified)	{ lns<<showe<<message<<". Correction by swapping & flipping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
-						else				{ lns<<showw<<message<<". Correction by swapping & flipping succeeded"<<flush_logger;
+						if (!info_modified)	{ lns<<showe<<message<<". Correction by swapping|flipping|swapping+flipping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
+						else				{ lns<<showw<<message<<". Correction by swapping|flipping|swapping+flipping succeeded"<<flush_logger;
+							in[FldInf[0]] = str_of_container(INFO,';');
+							if (in[FldInf[0]].empty()) in[FldInf[0]]=".";
+							print_container(in.contents(),program.outf,DLMTR,true);
+						}
+						continue;
+					}
+					else if (SwapFlip=="21" && SwAdFl && alt!="." && alt!="-")
+					{
+						string ref2=ref;
+						string alt2=alt;
+						genepi::dna_rc(ref2,true);
+						genepi::dna_rc(alt2,true);
+						if (ref2==seq)
+						{
+							in[FldRef[0]]=ref2;
+							in[FldAlt[0]]=alt2;
+							INFO.push_back("Flip_by_vAnnGene");
+							info_modified=true;
+						}
+						else
+						{
+							string seq1=genepi::DNA_seq(chr_num,bp,alt.size());
+							string ref1=ref;
+							string alt1=alt;
+							std::swap(ref1,alt1);
+							if (ref1==seq1)
+							{
+								in[FldRef[0]]=ref1;
+								in[FldAlt[0]]=alt1;
+								INFO.push_back("Swap_by_vAnnGene");
+								info_modified=true;
+							}
+							else
+							{
+								string ref3=ref;
+								string alt3=alt;
+								genepi::dna_rc(ref3,true);
+								genepi::dna_rc(alt3,true);
+								std::swap(ref3,alt3);
+								string seq3=genepi::DNA_seq(chr_num,bp,alt3.size());
+								if (ref3==seq3)
+								{
+									in[FldRef[0]]=ref3;
+									in[FldAlt[0]]=alt3;
+									INFO.push_back("Swap_by_vAnnGene");
+									INFO.push_back("Flip_by_vAnnGene");
+									info_modified=true;
+								}
+							}
+						}
+						if (!info_modified)	{ lns<<showe<<message<<". Correction by flipping|swapping|swapping+flipping failed"<<flush_logger; wr_log("REF_wrong"); continue; }
+						else				{ lns<<showw<<message<<". Correction by flipping|swapping|swapping+flipping succeeded"<<flush_logger;
 							in[FldInf[0]] = str_of_container(INFO,';');
 							if (in[FldInf[0]].empty()) in[FldInf[0]]=".";
 							print_container(in.contents(),program.outf,DLMTR,true);
@@ -2128,12 +2244,8 @@ int main (int argc, char * const argv[])
 						continue;
 					}
 				}
-				else if (toSwap || toFlip)
-				{
-					print_container(in.contents(),program.outf,DLMTR,true);
-					continue;
-				}
 			}
+			if (toSwap || toFlip || toKeep) { print_container(in.contents(),program.outf,DLMTR,true); continue; }
 			int qc_ed = variant_qc(chr_num,bp,ref,alt);
 			if (qc_ed==-1)
 			{

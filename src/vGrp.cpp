@@ -162,7 +162,6 @@ int main (int argc, char * const argv[])
 	int fil_saf=elog.get_token("variants filtered out by SplAF.");
 	int fil_faf=elog.get_token("variants filtered out by FdrAF.");
 	int fil_del=elog.get_token("variants filtered out by BayesDel.");
-	int fil_mis=elog.get_token("variants filtered out by missing rate.");
 	int fil_snv=elog.get_token("variants filtered out by type (SNV).");
 	int fil_lof=elog.get_token("variants filtered out by LoF.");
 	int fil_DNg=elog.get_token("variants filtered out by DomNeg.");
@@ -319,7 +318,7 @@ int main (int argc, char * const argv[])
 		else if (ColDel>=0)		read_val(in[ColDel],BayesDel);
 		if (perch::filter_AnnAF(BayesDel,GeneSymbol,is_lof,is_vks)) { elog.add(fil_del); continue; }
 
-		// skip by missing rate
+		/*/ skip by missing rate
 		if (perch::MisCut!=1)
 		{
 			if (perch::Mis_ea)
@@ -333,7 +332,7 @@ int main (int argc, char * const argv[])
 				double MsgAll=get_value(INFO,"MissingRate");
 				if (MsgAll>perch::MisCut) { elog.add(fil_mis); continue; }
 			}
-		}
+		} //*/
 
 		// restore original POS,REF,ALT
 		if (toRest)

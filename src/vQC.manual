@@ -7,7 +7,7 @@ OPTIONs for variant-wise QC on an input VCF file : __PRTXTFMT_HANGING__19
 --spl F             Read Sample File F {_Default_sample_file}
 --ped F             Read Pedigree File F (6 column LINKAGE format with header) {_Default_ped}
 --dup F             Read duplicated samples from file F (one row per sample, no limit to the number of columns, gold std on column 1) {_Default_dup}
---rep FILE1,FILE2   Read replication from FILE1 (2 columns: ReplicationID SeqID) and FILE2 (tabix-indexed cleaned VCF) {_Default_rep}
+--rep FILE1,FILE2   Read replication from FILE1 (2 columns: ReplicationID SeqID) and FILE2 (tabix-indexed cleaned VCF, @ allowed) {_Default_rep}
 --insert-dn F       Read de novo variants from file F (5 columns: Chr Pos Ref Alt SeqID) {_Default_insert_dn}
 --cohort F          Read cohort ID from file F. Cohort is a set of samples target-enriched and sequenced by the same reagent and platform. {_Default_cohort}
 --rm-ind Fs         Remove samples listed in file(s) Fs {_Default_rm_ind}

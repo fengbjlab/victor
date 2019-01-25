@@ -150,7 +150,7 @@ int main (int argc, char * const argv[])
 	}
 	for (auto &f:inGSet) f=perch::find_file(f);
 	STAT::StatType  gba_stat=to_StatType(biol_s);
-
+	
 	// about normalization
 	// STAT use MED_POS is better than MAD because
 	// 1) it's more meaningful to compute deviation from 0 rather than median;

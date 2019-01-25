@@ -611,8 +611,8 @@ namespace perch
 	
 	void read_arguments() {
 		vector<string> srce_opt;
-		srce_opt.insert( srce_opt.end(), conf_r.begin(), conf_r.end() );
 		srce_opt.insert( srce_opt.end(), program.arg().begin(), program.arg().end() );
+		srce_opt.insert( srce_opt.end(), conf_r.begin(), conf_r.end() );
 		genepi::read_arguments(srce_opt,false);
 
 		vector<int> to_rm(srce_opt.size(),0);
@@ -725,14 +725,14 @@ namespace perch
 				exit_error("cannot find the file "+fn+" in the working directory or in "+DBpath());
 		return new_name;
 	}
-	int		read_sex(string& s)
+	int		read_sex(string& s) // support UnknSex
 	{
 		boost::to_lower(s);
 		if		(s=="2" || s=="f" || s=="female" || s=="woman" || s=="girl") { s="2"; return 2; }
 		else if (s=="1" || s=="m" || s=="male"   || s=="man"   || s=="boy")  { s="1"; return 1; }
 		else																 { s="0"; return 0; }
 	}
-	double	read_aff(string& s)
+	double	read_aff(string& s) // support UnknAff
 	{
 		boost::to_lower(s);
 		double res = std::numeric_limits<double>::signaling_NaN();
@@ -855,6 +855,7 @@ namespace perch
 				  bool								rmUnAf,		// remove samples with missing affection status
 				  bool								rmUnCv,		// remove samples with missing covariate
 				  bool								no_cov,		// do not read covariate
+				  double							unfAff,		// unified affection status: 0 means read from file, other number means all samples have AFF=unfAff
 				  set< string >&					h_csID,		// SeqID of cases
 				  set< string >&					h_ctID,		// SeqID of controls
 				  set< string >&					h_ukID,		// SeqID of unknowns
@@ -908,8 +909,16 @@ namespace perch
 			SexMap[in[Spl_ID]] = sex;
 
 			// read aff
-			double	dep = perch::read_aff(in[SplAff]);
-			if (rmUnAf && std::isnan(dep)) { elog.add(spl_wrn_1); continue; } // skip samples with missing outcome
+			double	dep = std::numeric_limits<double>::signaling_NaN();
+			if (unfAff)
+			{
+				dep = unfAff;
+			}
+			else
+			{
+				dep = perch::read_aff(in[SplAff]);
+				if (rmUnAf && std::isnan(dep)) { elog.add(spl_wrn_1); continue; } // skip samples with missing outcome
+			}
 
 			// read covariates, allow strings, DO ignore samples with missing values
 			if (!no_cov && cols>covBgn)
@@ -920,7 +929,7 @@ namespace perch
 				{
 					if (CovIgn[c-covBgn]) in[c]="1";
 					boost::to_upper(in[c]);
-					if (in[c]=="" || in[c]=="." || in[c]=="UNKNOWN") has_missing=true;
+					if (in[c]=="" || in[c]=="." || in[c]=="UNKNOWN" || in[c]=="UNKNCOV") has_missing=true;
 					else
 					{
 						cov.push_back(in[c]);
@@ -937,7 +946,7 @@ namespace perch
 			if (!no_cov && SplPop)
 			{
 				boost::to_upper(in[SplPop]);
-				if (in[SplPop]!="" && in[SplPop]!="." && in[SplPop]!="UNKNOWN") PopMap[in[Spl_ID]]=in[SplPop];
+				if (in[SplPop]!="" && in[SplPop]!="." && in[SplPop]!="UNKNOWN" && in[SplPop]!="UNKNPOP") PopMap[in[Spl_ID]]=in[SplPop];
 			}
 			
 			// update

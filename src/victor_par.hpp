@@ -109,6 +109,7 @@ namespace perch
 						 bool											rmUnAf,		// remove samples with missing affection status
 						 bool											rmUnCv,		// remove samples with missing covariate
 						 bool											no_cov,		// do not read covariate
+						 double											unfAff,		// unified AFF: 0 means read from file, other number means all samples have AFF=unfAff
 						 std::set< std::string >&						h_csID,		// SeqID of cases
 						 std::set< std::string >&						h_ctID,		// SeqID of controls
 						 std::set< std::string >&						h_ukID,		// SeqID of unknowns

@@ -26,7 +26,7 @@ double						MisPVl = 0.000001;		// skip genes if missing % between cs and ct has
 vector<double>				CovORs;	// covariates OR/unit: CovORs[var_coor]
 vector< vector<double> >	CovVar;	// covariates for REG: CovVar[spl_coor][var_coor]
 vector<double>				DepVar;	// Dependent variable: DepVar[spl_coor]
-vector<double>				strata;	// strata def by cov : strata[spl_coor]=RRc
+vector<string>				strata;	// strata def by cov : strata[spl_coor]
 vector<string>				record;	// sequenced recordID: record[spl_coor]
 vector< vector<int> >		Tx_DEL; // No. of copies of a: Tx_DEL[MyTxID][spl_coor] = 0,1,2.. (diploidy) or 0,2,4.. (haploidy). -1=missing, -2=NA
 vector< vector<int> >		Tx_DUP; // No. of copies of a: Tx_DUP[MyTxID][spl_coor] = 0,1,2.. (diploidy) or 0,2,4.. (haploidy). -1=missing, -2=NA
@@ -200,7 +200,7 @@ void test(vector< vector<int> >& db)
 			map<int,CGinfo>		cg;	// collapsed genotype
 			STinfo():cs(0),ct(0) {}
 		};
-		map<double, STinfo>		sg;	// stratified genotypes sg[strata] (strata defined by relative risk)
+		map<string, STinfo>		sg;	// stratified genotypes sg[strata] (strata defined by relative risk)
 		double t_cs=0, t_ct=0;		// total number of cases, controls w/o missing
 		double m_cs=0, m_ct=0;		// total number of cases, controls w/  missing
 		double a_cs=0, a_ct=0;		// total number of cases, controls w/  alternative allele (!=2)
@@ -251,7 +251,6 @@ void test(vector< vector<int> >& db)
 				if (!s.second.cs || !s.second.ct) continue;
 				if (s.second.cg.size()<2) continue;
 				calculated=true;
-				double newPre = truncated(perch::preval * s.first); // prevalence in this strata: P(s=1|c)
 				// cerr<<perch::preval<<'\t'<<s.first<<endl;
 				vector<double> fp,pn,fs,ft,ns,nt;
 				for (auto &g:s.second.cg)
@@ -259,7 +258,7 @@ void test(vector< vector<int> >& db)
 					ns.push_back( g.second.cs);
 					nt.push_back( g.second.ct);
 					pn.push_back( pen(g.first) );
-					fp.push_back( (double)g.second.cs/(double)s.second.cs * newPre + (double)g.second.ct/(double)s.second.ct * (1-newPre) );
+					fp.push_back( perch::preval * g.second.cs/s.second.cs + (1-perch::preval) * g.second.ct/s.second.ct );
 					// cerr<<g.first<<'\t'<<ns.back()<<'\t'<<nt.back()<<'\t'<<fp.back()<<'\t'<<pn.back()<<endl;
 				}
 				MakeFraction(fp);
@@ -326,7 +325,6 @@ int main (int argc, char * const argv[])
 		else if (str_startsw(program.arg()[argi],"--detail"))			ReadArg(program.arg(),argi,det_lg);
 		else if (str_startsw(program.arg()[argi],"--pDup-damage"))		ReadArg(program.arg(),argi,pdupid);
 		else if (str_startsw(program.arg()[argi],"-")) exit_error("unknown option "+program.arg()[argi]);
-		//else if (spl_in.empty()) spl_in=program.arg()[argi];
 		else if (vcf_in.empty()) vcf_in=program.arg()[argi];
 		else { exit_error("excessive parameter "+program.arg()[argi]); }
 	}
@@ -356,32 +354,26 @@ int main (int argc, char * const argv[])
 	if (spl_in.empty()) exit_error("Sample File not set.");
 	int	DoWhat = -1;
 	boost::to_lower(testWh);
-	if		(testWh=="no")	DoWhat=0;
-	else if	(testWh=="damaging") DoWhat=1;
-	else if	(testWh=="enhancing") DoWhat=2;
+	if		(testWh=="no")			DoWhat=0;
+	else if	(testWh=="none")		DoWhat=0;
+	else if	(testWh=="damaging")	DoWhat=1;
+	else if	(testWh=="enhancing")	DoWhat=2;
 	//else if (testWh=="all") DoWhat=3; // removed because the test doesn't make sense. It's better to do linear regression.
-	else exit_error("--test consequence should be del/dup/all/no.");
+	else exit_error("--test argument should be damaging/enhancing/no.");
 	bool log_only = (DoWhat==0 && !del_lg.empty());
 
 	// read gene db
 	genepi::read_genes();
 
 	// read sample file
-	map< string, double >			dep_db;		// dep_db[SeqID]           = dependent variable
-	map< string, vector<double> >	cov_db;		// cov_db[SeqID][variable] = covariate variable
-	map< string, int >				SexMap;		// SexMap[SeqID]           = gender (1 for male, 2 for female)
-	set< string >					h_csID;		// SeqID of cases
-	set< string >					h_ctID;		// SeqID of controls
-	double							factor=1;	// 1/denominator for RRc calculation
+	set< string >					h_csID;	// SeqID of cases
+	set< string >					h_ctID;	// SeqID of controls
+	map< string, int >				SexMap;	// SeqID => gender (1 for male, 2 for female)
+	map< string, double >			DepMap;	// SeqID => dependent variable
+	map< string, string >			StrMap;	// SeqID => strata
+	map< string, vector<double> >	CovMap;	// SeqID => covariate for analysis, [c] is the same as CovVar CovNID
 	if (!spl_in.empty())
 	{
-		int			cols=0;		// number of columns
-		const int	covBgn=3;	// covariates start from this column (0-based)
-		const int	minCol=3;	// minimum number of columns in a sample file
-		const int	Spl_ID=0;
-		const int	SplSex=1;
-		const int	SplAff=2;
-		
 		if (ToWait)
 		{
 			string first_line;
@@ -389,109 +381,12 @@ int main (int argc, char * const argv[])
 			if (first_line!="## vSIM created genotype file")
 				exit_error("Don't use --wait if genotype file is not in standard input or not created by vSIM.");
 		}
-		for (Rows_in_File(in,spl_in,0)) // required columns: SeqID Outcome
-		{
-			// read and clean data
-			if (in.RowNumber()==0)
-			{
-				cols=in.NumFields();
-				if (cols<minCol)															exit_error("Insufficient number of columns in the Sample File "+spl_in);
-				boost::to_lower(in[Spl_ID]); if (in[Spl_ID]!="seqid"&&in[Spl_ID]!="sample")	exit_error("The first  column of a Sample File should be SeqID/sample.");
-				boost::to_lower(in[SplSex]); if (in[SplSex]!="sex"&&in[SplSex]!="gender")	exit_error("The second column of a Sample File should be sex/gender.");
-				for (int c=covBgn;c<cols;++c) { double OR; if (ReadStr(substr_after_find(in[c],"_OR="),OR,0)) CovORs.push_back(OR); else CovORs.push_back(0); }
-				continue;
-			}
-			if (cols!=in.NumFields()) exit_error("inconsistent number of columns in "+spl_in);
-			if (exist_element(SexMap,in[Spl_ID])) exit_error("duplicated sample "+in[Spl_ID]+" in "+spl_in);
-			if (exist_element(perch::rm_ind,in[Spl_ID])) continue; // skip samples to be removed
 
-			int		sex = perch::read_sex(in[SplSex]);
-			double	dep = perch::read_aff(in[SplAff]); if (log_only) dep=1;
-			vector<double>	cov;	// covariate variable
-			SexMap[in[Spl_ID]]=sex;
-			if (std::isnan(dep)) continue; // skip samples with missing outcome
-			
-			// read covariates
-			if (cols>covBgn)
-			{
-				bool mss=false;	// this individual is missing for at least 1 covariate
-				for (int c=covBgn;c<cols;++c)
-				{
-					double val;
-					if (!ReadStr(in[c],val,0)) { mss=true; break; }
-					cov.push_back(val);
-				}
-				if (mss) continue; // skip samples with 1+ missing covariate
-			}
-			
-			// update
-			if		(dep==2) h_csID.insert(in[Spl_ID]);
-			else if (dep==1) h_ctID.insert(in[Spl_ID]);
-			dep_db[in[Spl_ID]]=dep;
-			cov_db[in[Spl_ID]]=cov;
-		}
-		if (!perch::is_qtl())
-			for (auto &i:dep_db) i.second-=1;
-
-		// prepare covariates for HLR, which only works for case-control data
-		if (!h_csID.empty() && !h_ctID.empty())
-		{
-			// do logistic regression to obtain ORs
-			{
-				const int ni = h_csID.size() + h_ctID.size();	// number of individuals (observations)
-				const int np = cov_db.begin()->second.size()+1;	// number of parameters
-				Eigen::VectorXd c(np);			// beta
-				Eigen::MatrixXd cov(np,np);		// covariance matrix
-				Eigen::VectorXd y(ni);			// y
-				Eigen::MatrixXd X(ni,np);		// X
-				size_t j=0;
-				for (auto &id:h_csID)
-				{
-					y(j)=dep_db[id];
-					X(j,0)=1;
-					for (size_t c=0;c<cov_db[id].size();++c) X(j,c+1)=cov_db[id][c];
-					++j;
-				}
-				for (auto &id:h_ctID)
-				{
-					y(j)=dep_db[id];
-					X(j,0)=1;
-					for (size_t c=0;c<cov_db[id].size();++c) X(j,c+1)=cov_db[id][c];
-					++j;
-				}
-				if (multifit_logistic_validate(X,y,1))
-				{
-					double chisq;
-					multifit_logistic_workspace work(ni,np);
-					multifit_logistic(X,y,c,cov,chisq,work);
-					for(int i=1;i<np;++i) { CovORs[i-1]=exp(c(i)); }
-				}
-				else
-					exit_error("Failed to do logistic regression on covariates only.");
-			}
-			
-			// prepare covariates for HLR, assumes independence between covariates
-			factor = 1;
-			for (size_t c=0;c<CovORs.size();++c)
-			{
-				map<double,pair<double,double> > ValCnt; // ValCnt[value] = <#cs,#ct>
-				for (auto &i:cov_db)
-				{
-					if (dep_db[i.first]) { ++ValCnt[i.second[c]].first;  }
-					else				 { ++ValCnt[i.second[c]].second; }
-				}
-				double denominator = 0;
-				double sum_of_prob = 0;
-				for (auto &v:ValCnt)
-				{
-					double prob = v.second.first / h_csID.size() * perch::preval + v.second.second / h_ctID.size() * (1-perch::preval); // P(value)
-					sum_of_prob += prob;
-					denominator += prob * pow(CovORs[c],v.first);
-				}
-				denominator /= sum_of_prob;
-				factor /= denominator;
-			}
-		}
+		set< string >				h_ukID;	// SeqID of unknowns
+		map< string, string> 		PopMap;	// SeqID => population
+		vector<string>				CovNID;	//          covariate new ID. [c] is the same as CovMap.
+		bool						read_cov=true;
+		perch::read_spl(spl_in,true,true,!read_cov,(log_only?1.0:0.0),h_csID,h_ctID,h_ukID,SexMap,DepMap,PopMap,StrMap,CovMap,CovNID);
 	}
 	
 	if (!det_lg.empty())
@@ -505,14 +400,8 @@ int main (int argc, char * const argv[])
 	if (inLong) // long format
 	{
 		map<string,int> coordinate; // coordinate[sampleID] = coordinate in DepVar etc.
-		for (auto &x:dep_db) if (x.second!=0) { CovVar.push_back(cov_db[x.first]); DepVar.push_back(dep_db[x.first]); record.push_back(x.first); } // cs
-		for (auto &x:dep_db) if (x.second==0) { CovVar.push_back(cov_db[x.first]); DepVar.push_back(dep_db[x.first]); record.push_back(x.first); } // ct
-		for (size_t i=0;i<DepVar.size();++i)
-		{
-			double RRc = factor; // Relative Risk as compared to the general population
-			for (size_t c=0;c<CovORs.size();++c) RRc *= pow(CovORs[c],CovVar[i][c]);
-			strata.push_back(boost::lexical_cast<double>(ftos(RRc,1))); // use 1 significant digits to merge as many samples as possible
-		}
+		for (auto &x:DepMap) if (x.second!=0) { CovVar.push_back(CovMap[x.first]); DepVar.push_back(DepMap[x.first]); strata.push_back(StrMap[x.first]); record.push_back(x.first); } // cs
+		for (auto &x:DepMap) if (x.second==0) { CovVar.push_back(CovMap[x.first]); DepVar.push_back(DepMap[x.first]); strata.push_back(StrMap[x.first]); record.push_back(x.first); } // ct
 		for (auto &g:genepi::gene_byTranscript) for (auto &t:g.second)
 		{
 			Tx_DEL.push_back(vector<int>(DepVar.size(),2));
@@ -568,7 +457,7 @@ int main (int argc, char * const argv[])
 			}
 			if (header_not_read) exit_error("Header lines missing.");
 			
-			if (!exist_element(SexMap,in[ColInd])) continue; // assume dep_db and cov_db have the same number of samples as SexMap
+			if (!exist_element(SexMap,in[ColInd])) continue; // assume DepMap and CovMap have the same number of samples as SexMap
 			string SVTYPE = boost::to_upper_copy(in[ColTyp]);
 			string END = in[ColEnd];
 			int	chr_num;	if (!genepi::read_chr_num(in[ColChr],chr_num))	exit_error("Failed to read "+in[ColChr]+" as a chromosome.");
@@ -632,14 +521,8 @@ int main (int argc, char * const argv[])
 	else if (clamms) // CLAMMs format
 	{
 		map<string,int> coordinate; // coordinate[sampleID] = coordinate in DepVar etc.
-		for (auto &x:dep_db) if (x.second!=0) { CovVar.push_back(cov_db[x.first]); DepVar.push_back(dep_db[x.first]); record.push_back(x.first); } // cs
-		for (auto &x:dep_db) if (x.second==0) { CovVar.push_back(cov_db[x.first]); DepVar.push_back(dep_db[x.first]); record.push_back(x.first); } // ct
-		for (size_t i=0;i<DepVar.size();++i)
-		{
-			double RRc = factor; // Relative Risk as compared to the general population
-			for (size_t c=0;c<CovORs.size();++c) RRc *= pow(CovORs[c],CovVar[i][c]);
-			strata.push_back(boost::lexical_cast<double>(ftos(RRc,1))); // use 1 significant digits to merge as many samples as possible
-		}
+		for (auto &x:DepMap) if (x.second!=0) { CovVar.push_back(CovMap[x.first]); DepVar.push_back(DepMap[x.first]); strata.push_back(StrMap[x.first]); record.push_back(x.first); } // cs
+		for (auto &x:DepMap) if (x.second==0) { CovVar.push_back(CovMap[x.first]); DepVar.push_back(DepMap[x.first]); strata.push_back(StrMap[x.first]); record.push_back(x.first); } // ct
 		for (auto &g:genepi::gene_byTranscript) for (auto &t:g.second)
 		{
 			Tx_DEL.push_back(vector<int>(DepVar.size(),2));
@@ -675,7 +558,7 @@ int main (int argc, char * const argv[])
 		int ColQua=12;	// QC score. 0-1 is low confidence; 2-3 is high confidence. I know this because the RGC "*.high-confidence.cnv.annotated.bed" only have 2 and 3.
 		for (Rows_in_File(in,vcf_in,6))
 		{
-			if (!exist_element(SexMap,in[ColInd])) continue; // assume dep_db and cov_db have the same number of samples as SexMap
+			if (!exist_element(SexMap,in[ColInd])) continue; // assume DepMap and CovMap have the same number of samples as SexMap
 			string SVTYPE = boost::to_upper_copy(in[ColTyp]);
 			int	chr_num;	if (!genepi::read_chr_num(in[ColChr],chr_num))	exit_error("Failed to read "+in[ColChr]+" as a chromosome.");
 			int	bp;			if (!read_val_ge(in[ColPos],bp,1))				exit_error("Failed to read "+in[ColPos]+" as a position in basepairs.");
@@ -715,14 +598,8 @@ int main (int argc, char * const argv[])
 	else if (penncn)
 	{
 		map<string,int> coordinate; // coordinate[sampleID] = coordinate in DepVar etc.
-		for (auto &x:dep_db) if (x.second!=0) { CovVar.push_back(cov_db[x.first]); DepVar.push_back(dep_db[x.first]); record.push_back(x.first); } // cs
-		for (auto &x:dep_db) if (x.second==0) { CovVar.push_back(cov_db[x.first]); DepVar.push_back(dep_db[x.first]); record.push_back(x.first); } // ct
-		for (size_t i=0;i<DepVar.size();++i)
-		{
-			double RRc = factor; // Relative Risk as compared to the general population
-			for (size_t c=0;c<CovORs.size();++c) RRc *= pow(CovORs[c],CovVar[i][c]);
-			strata.push_back(boost::lexical_cast<double>(ftos(RRc,1))); // use 1 significant digits to merge as many samples as possible
-		}
+		for (auto &x:DepMap) if (x.second!=0) { CovVar.push_back(CovMap[x.first]); DepVar.push_back(DepMap[x.first]); strata.push_back(StrMap[x.first]); record.push_back(x.first); } // cs
+		for (auto &x:DepMap) if (x.second==0) { CovVar.push_back(CovMap[x.first]); DepVar.push_back(DepMap[x.first]); strata.push_back(StrMap[x.first]); record.push_back(x.first); } // ct
 		for (auto &g:genepi::gene_byTranscript) for (auto &t:g.second)
 		{
 			Tx_DEL.push_back(vector<int>(DepVar.size(),2));
@@ -737,7 +614,7 @@ int main (int argc, char * const argv[])
 		format.set_option(SUCCESSIVE_DELIMITERS_AS_ONE,true);
 		for (Rows_in_File(in,vcf_in,&format))
 		{
-			if (!exist_element(SexMap,in[ColInd])) continue; // assume dep_db and cov_db have the same number of samples as SexMap
+			if (!exist_element(SexMap,in[ColInd])) continue; // assume DepMap and CovMap have the same number of samples as SexMap
 			int copy; if (!read_val(in[3].substr(10),copy)) continue;
 			string qual_str = in[7].substr(5);
 			string chr_str = substr_before_find(in[0],":");
@@ -855,14 +732,8 @@ int main (int argc, char * const argv[])
 					SexSpl.insert( SexSpl.end(), SexCSs.begin(), SexCSs.end() );
 					SexSpl.insert( SexSpl.end(), SexCTs.begin(), SexCTs.end() );
 					FldSpl = FldCSs + FldCTs;
-					for (size_t i=0;i<FldCSs.size();++i) { CovVar.push_back(cov_db[in[FldCSs[i]]]); DepVar.push_back(dep_db[in[FldCSs[i]]]); record.push_back(in[FldCSs[i]]); }
-					for (size_t i=0;i<FldCTs.size();++i) { CovVar.push_back(cov_db[in[FldCTs[i]]]); DepVar.push_back(dep_db[in[FldCTs[i]]]); record.push_back(in[FldCTs[i]]); }
-					for (size_t i=0;i<FldSpl.size();++i)
-					{
-						double RRc = factor; // Relative Risk as compared to the general population
-						for (size_t c=0;c<CovORs.size();++c) RRc *= pow(CovORs[c],CovVar[i][c]);
-						strata.push_back(boost::lexical_cast<double>(ftos(RRc,1))); // use 1 significant digits to merge as many samples as possible
-					}
+					for (size_t i=0;i<FldCSs.size();++i) { CovVar.push_back(CovMap[in[FldCSs[i]]]); DepVar.push_back(DepMap[in[FldCSs[i]]]); strata.push_back(StrMap[in[FldCSs[i]]]); record.push_back(in[FldCSs[i]]); }
+					for (size_t i=0;i<FldCTs.size();++i) { CovVar.push_back(CovMap[in[FldCTs[i]]]); DepVar.push_back(DepMap[in[FldCTs[i]]]); strata.push_back(StrMap[in[FldCTs[i]]]); record.push_back(in[FldCTs[i]]); }
 					for (auto &g:genepi::gene_byTranscript)
 						for (auto &t:g.second)
 						{

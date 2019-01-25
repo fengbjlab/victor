@@ -51,3 +51,4 @@ OPTIONS : __PRTXTFMT_HANGING__19
  --norm-only B     Do not do annotation, just left-normalize POS,REF,ALT. Output sorted by Chr,Pos,Ref,Alt. {_Default_LNonly}
  --swap B          Do not do annotation, just correct REF errors by swapping REF & ALT. {_Default_cs}
  --flip B          Do not do annotation, just correct REF errors by flipping strand. {_Default_cf}
+ --no-cgat B       Remove CG or AT variants. {_Default_no_cgat}

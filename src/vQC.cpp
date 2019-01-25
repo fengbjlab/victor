@@ -778,8 +778,10 @@ void compute(JobData& p)
 			vector<string>	rp;			// matched line
 			string			rep_tbx;	// return by tabix
 			string chr = genepi::convert_chr_num(chr_num);
-			try { rep_tbx = exec("tabix "+par.rep_in[1]+" "+chr+":"+itos(bp)+"-"+itos(bp),false); }
-			catch (const std::exception& error) { exit_error("tabix "+par.rep_in[1]+" "+chr+":"+itos(bp)+"-"+itos(bp)+" failed"); }
+			string chr_spe_gtp = boost::algorithm::replace_all_copy(par.rep_in[1],"@",chr);
+			if (!FileExists(chr_spe_gtp+".tbi")) exit_error("cannot find "+chr_spe_gtp+".tbi");
+			try { rep_tbx = exec("tabix "+chr_spe_gtp+" "+chr+":"+itos(bp)+"-"+itos(bp),false); }
+			catch (const std::exception& error) { exit_error("tabix "+chr_spe_gtp+" "+chr+":"+itos(bp)+"-"+itos(bp)+" failed"); }
 			if (!rep_tbx.empty())
 			{
 				rep_tbx.pop_back(); // rep_tbx ends with \n
@@ -851,7 +853,7 @@ void compute(JobData& p)
 		double csctGQ = std::numeric_limits<double>::signaling_NaN(); // ratio of mean ranks for GQ in cs/ct
 		double csctDP = std::numeric_limits<double>::signaling_NaN(); // ratio of mean ranks for DP in cs/ct
 		double psc[2] = {std::numeric_limits<double>::signaling_NaN(),std::numeric_limits<double>::signaling_NaN()}; // percent_of_samples_covered
-		
+
 		if (!samples.empty())
 		{
 			psc[0]=0; psc[1]=0;
@@ -1173,8 +1175,10 @@ void compute(JobData& p)
 			vector<string>	rp;			// matched line
 			string			rep_tbx;	// return by tabix
 			string chr = genepi::convert_chr_num(chr_num);
-			try { rep_tbx = exec("tabix "+par.rep_in[1]+" "+chr+":"+itos(bp)+"-"+itos(bp),false); }
-			catch (const std::exception& error) { exit_error("tabix "+par.rep_in[1]+" "+chr+":"+itos(bp)+"-"+itos(bp)+" failed"); }
+			string chr_spe_gtp = boost::algorithm::replace_all_copy(par.rep_in[1],"@",chr);
+			if (!FileExists(chr_spe_gtp+".tbi")) exit_error("cannot find "+chr_spe_gtp+".tbi");
+			try { rep_tbx = exec("tabix "+chr_spe_gtp+" "+chr+":"+itos(bp)+"-"+itos(bp),false); }
+			catch (const std::exception& error) { exit_error("tabix "+chr_spe_gtp+" "+chr+":"+itos(bp)+"-"+itos(bp)+" failed"); }
 			if (!rep_tbx.empty())
 			{
 				rep_tbx.pop_back(); // rep_tbx ends with \n
@@ -1408,7 +1412,7 @@ void compute(JobData& p)
 			spl_mt.unlock();
 		}
 		
-		// Below are other filters not related to QC. The excluded variants should be in the summary statistics above, so put these parts here.
+		// Below are other filters not related to QC. The excluded variants should be in the summary statistics above (par.spl_qc), so put these parts here.
 
 		// skip by allele frequency.
 		if (perch::filXAF && !std::isnan(MaxAF))
@@ -1538,7 +1542,8 @@ int main (int argc, char * const argv[])
 	format.set_option(SKIP_NOTES,false);
 	bool			do_nothing=false;
 	string			bed_in="minimum.bed";
-	
+	string			ex_chr = "1";	// example chromosome string (1)
+
 	// handle program arguments
 	perch::clear_flt_af(false);
 	program.enable_option("--nt");
@@ -1560,6 +1565,7 @@ int main (int argc, char * const argv[])
 		else if (str_startsw(program.arg()[argi],"--ped"))				ReadArg(program.arg(),argi,par.ped_in);
 		else if (str_startsw(program.arg()[argi],"--dup"))				ReadArg(program.arg(),argi,par.dup_in);
 		else if (str_startsw(program.arg()[argi],"--rep"))				ReadSet(program.arg(),argi,par.rep_in);
+		else if (str_startsw(program.arg()[argi],"--example-chr"))		ReadArg(program.arg(),argi,ex_chr);
 		else if (str_startsw(program.arg()[argi],"--rm-var"))		{	ReadArg(program.arg(),argi,par.rm_var); if (!par.rm_var) par.ftAFNG=0; }
 		else if (str_startsw(program.arg()[argi],"--do-nothing"))		ReadArg(program.arg(),argi,do_nothing);
 		else if (str_startsw(program.arg()[argi],"--filt-no-geno"))		ReadArg(program.arg(),argi,par.ftNoGt);
@@ -1656,6 +1662,7 @@ int main (int argc, char * const argv[])
 	program.help_text_var("_Default_memory",par.memcap);
 	program.help_text_var("_Default_dup",par.dup_in);
 	program.help_text_var("_Default_rep",str_of_container(par.rep_in,',',false));
+	program.help_text_var("_Default_example_chr",ex_chr);
 	program.help_text_var("_Default_out_vqs",vqs_fn);
 	program.help_text_var("_Default_out_log",log_fn);
 	program.help_text_var("_Default_out_dup",dup_fn);
@@ -1709,7 +1716,6 @@ int main (int argc, char * const argv[])
 			// if (!par.dup_in.empty()) exit_error("--dup and --rep cannot be used together.");
 			if (par.rep_in.size()!=2) exit_error("--rep argumnts should be ReplicationSampleFile,ReplicationGenotypeFile");
 			if (!str_endsw(par.rep_in[1],".vcf.gz")) exit_error("--rep argument 2 should be something.vcf.gz, which was compressed by bgzip.");
-			if (!FileExists(par.rep_in[1]+".tbi")) exit_error("cannot find "+par.rep_in[1]+".tbi");
 		}
 		if (par.InfoHW.size() % 3) exit_error("Number of arguments for --hwe-info must be Nx3 strings, corresponding to AN,Het,Hom.");
 		if (perch::FiltQD==0 && \
@@ -1739,124 +1745,25 @@ int main (int argc, char * const argv[])
 
 	// read sample file. columns: SeqID Sex Aff Cov(s).
 	// Covariates can be case-insensitive strings or numbers, but cannot be both. Missing values are emptye strings or . or UNKNOWN.
-	set< string >					h_csID;		// SeqID of cases
-	set< string >					h_ctID;		// SeqID of controls
-	set< string >					h_ukID;		// SeqID of unknowns
-	map< string, int>				SexMap;		// SeqID => gender (1 for male, 2 for female, 0 for unknown)
-	map< string, string> 			PopMap;		// SeqID => population
-	map< string, string> 			CohMap;		// SeqID => cohort
-	map< string, vector<double> >	CovMap;		// SeqID => covariate for analysis
+	set< string >					h_csID;	// SeqID of cases
+	set< string >					h_ctID;	// SeqID of controls
+	set< string >					h_ukID;	// SeqID of unknowns
+	map< string, int>				SexMap;	// SeqID => gender (1 for male, 2 for female, 0 for unknown)
+	map< string, string> 			PopMap;	// SeqID => population
+	map< string, vector<double> >	CovMap;	// SeqID => covariate for analysis
 	if (!par.spl_in.empty())
 	{
-		map< string, vector<string> >	CovRaw;	// SeqID => column => value string
-		vector< int >					CovIaN;	//          column => number of numbers
-		vector< map<string,int> >		CovNaN;	//          column => string => number of observations
-		vector< int >					CovIgn;	//          column => to ignore if 1
-
-		if (par.TotSpl) exit_error("please don't use --tot-spl together with the --spl option.");
-		int			cols=0;		// observed number of columns in the sample file
-		const int	covBgn=3;	// covariates start from this column (0-based)
-		const int	minCol=3;	// minimum number of columns in a sample file
-		const int	Spl_ID=0;	// 0-based column number for SeqID
-		const int	SplSex=1;	// 0-based column number for Sex
-		const int	SplAff=2;	// 0-based column number for Aff
-		int			SplPop=0;	// 0-based column number for Pop (0=not provided, since SeqID is 0)
-		bool		HasPop=false; // Sample File contains the population origin information provided by the user
-		
-		for (Rows_in_File(in,par.spl_in,0)) // required columns: SeqID Outcome
-		{
-			if (in.RowNumber()==0)
-			{
-				cols=in.NumFields();
-				if (cols<minCol)															exit_error("Insufficient number of columns in the Sample File "+par.spl_in);
-				boost::to_lower(in[Spl_ID]); if (in[Spl_ID]!="seqid"&&in[Spl_ID]!="sample")	exit_error("The first  column of a Sample File should be SeqID/sample.");
-				boost::to_lower(in[SplSex]); if (in[SplSex]!="sex"&&in[SplSex]!="gender")	exit_error("The second column of a Sample File should be sex/gender.");
-				for (int c=covBgn;c<cols;++c) { string t=boost::to_lower_copy(in[c]); if (t=="_ipop")				{ 				SplPop=c; break; } }
-				for (int c=covBgn;c<cols;++c) { string t=boost::to_lower_copy(in[c]); if (t=="pop"||t=="population"){ HasPop=true;	SplPop=c; break; } }
-				if (cols>covBgn) { CovIaN.assign(cols-covBgn,0); CovNaN.assign(cols-covBgn,map<string,int>()); CovIgn.assign(cols-covBgn,0); }
-				if (HasPop)				{ for (int c=covBgn;c<cols;++c) if (str_startsw(in[c],"_PC_")||in[c]=="_iPop")	CovIgn[c-covBgn]=1; }
-				else if (perch::a_iPop)	{ for (int c=covBgn;c<cols;++c) if (str_startsw(in[c],"_PC_"))					CovIgn[c-covBgn]=1; }
-				else					{ for (int c=covBgn;c<cols;++c) if (in[c]=="_iPop")								CovIgn[c-covBgn]=1; }
-				continue;
-			}
-			if (cols!=in.NumFields()) exit_error("inconsistent number of columns in "+par.spl_in);
-			if (exist_element(SexMap,in[Spl_ID])) exit_error("duplicated sample "+in[Spl_ID]+" in "+par.spl_in);
-			if (exist_element(perch::rm_ind,in[Spl_ID])) continue; // skip samples to be removed
-			
-			// read sex and aff
-			int		sex = perch::read_sex(in[SplSex]);
-			double	dep = perch::read_aff(in[SplAff]);
-			SexMap[in[Spl_ID]] = sex;
-			if		(dep==2) h_csID.insert(in[Spl_ID]);
-			else if (dep==1) h_ctID.insert(in[Spl_ID]);
-			else			 h_ukID.insert(in[Spl_ID]);
-			
-			// read pop
-			if (SplPop)
-			{
-				boost::to_upper(in[SplPop]);
-				if (in[SplPop]!="" && in[SplPop]!="." && in[SplPop]!="UNKNOWN") PopMap[in[Spl_ID]]=in[SplPop];
-			}
-			
-			// read covariates, allow strings, DOES NOT ignore samples with missing values
-			if (cols>covBgn)
-			{
-				vector<string> cov;
-				bool has_missing=false;	// this individual has at least 1 missing value
-				for (int c=covBgn;c<cols;++c)
-				{
-					if (CovIgn[c-covBgn]) in[c]="1";
-					boost::to_upper(in[c]);
-					if (in[c]=="" || in[c]=="." || in[c]=="UNKNOWN") has_missing=true;
-					else
-					{
-						cov.push_back(in[c]);
-						double val=std::numeric_limits<double>::signaling_NaN();
-						if (ReadStr(in[c],val,0)) CovIaN[c-covBgn]++;
-						else CovNaN[c-covBgn][in[c]]++;
-					}
-				}
-				if (!has_missing) CovRaw[in[Spl_ID]]=cov;
-			}
-		}
-		
-		// convert string covariates to numeric covariates
-		for (size_t i=0;i<CovIaN.size();++i)
-		{
-			if (CovIaN[i]==0 &&  CovNaN[i].empty()) exit_error("covariates in a Sample File cannot be missing for all samples.");
-			if (CovIaN[i]!=0 && !CovNaN[i].empty()) exit_error("covariates in a Sample File must be either strings or numbers, but cannot be both.");
-			if (CovIaN[i]!=0)
-			{
-				for (auto &j:CovRaw)
-				{
-					double val=std::numeric_limits<double>::signaling_NaN();
-					ReadStr(j.second[i],val,0);
-					CovMap[j.first].push_back(val);
-				}
-			}
-			else
-			{
-				string 	max_str;
-				int 	max_val=-1;
-				for (auto &v:CovNaN[i])
-					if (v.second>max_val) { max_str=v.first; max_val=v.second; }
-				for (auto &v:CovNaN[i])
-				{
-					if (v.first==max_str) continue;
-					for (auto &j:CovRaw)
-					{
-						if (j.second[i]==v.first) 	CovMap[j.first].push_back(1);
-						else 						CovMap[j.first].push_back(0);
-					}
-				}
-			}
-		}
+		map< string, double >		DepMap;	// SeqID => dependent variable
+		map< string, string >		StrMap;	// SeqID => strata
+		vector<string>				CovNID;	//          covariate new ID. [c] is the same as CovMap.
+		perch::read_spl(par.spl_in,false,false,false,0.0,h_csID,h_ctID,h_ukID,SexMap,DepMap,PopMap,StrMap,CovMap,CovNID);
 	}
 	else
 	{
 		//if (par.TotSpl<=0) exit_error("without --spl, you must specify --tot-spl with a positive integer.");
 	}
 	
+	map< string,string >			CohMap;	// SeqID => cohort
 	if (!par.coh_in.empty())
 	{
 		const int Spl_ID=0;
@@ -2442,14 +2349,16 @@ int main (int argc, char * const argv[])
 				tfile_format rep_geno_format;
 				rep_geno_format.set_delimiters("\t");
 				rep_geno_format.comment_sw()="##";
-				for (Rows_in_File(ri,par.rep_in[1],&rep_geno_format))
+				string chr_spe_gtp = boost::algorithm::replace_all_copy(par.rep_in[1],"@",ex_chr);
+				if (!FileExists(chr_spe_gtp+".tbi")) exit_error("cannot find "+chr_spe_gtp+".tbi");
+				for (Rows_in_File(ri,chr_spe_gtp,&rep_geno_format))
 				{
 					if (exist_any(perch::h_col1, ri.contents()))
 					{
 						id=ri.contents();
 						break;
 					}
-					exit_error("faile to read "+par.rep_in[1]+". It should be in VCF format.");
+					exit_error("faile to read "+chr_spe_gtp+". It should be in VCF format.");
 				}
 				
 				for (Rows_in_File(ri,par.rep_in[0],2))

@@ -1,19 +1,12 @@
 // link libs: -lptoc -lnlopt_cxx
 
 /*
- Features:
- 1) Only pedigrees with observed variants and 2+ non-missing individuals are analyzed. Previously all pedigrees were analyzed, which has 3 problems:
-    A. If the pedigree file is big, it will go out of mlink's limitation
-    B. Those pedigrees have a negative LOD score, so the overall LOD could be very negative, although it still has some discrimination power.
-    C. The discrimination power is low due to the dilution by these pedigrees
- 2) correct for ascertainment, otherwise the LOD also measure association
+ 1) Only pedigrees with observed variants and 2+ non-missing individuals are analyzed.
+ 2) Control for ascertainment, otherwise the LOD score also measures association.
  3) gene-wise LOD is calcuated as weighted sum of LRs, where variant weight is the posterior probability of deleteriousness (DEL+VQS)
  4) Output either gene-wise or variant-wise LOD scores. For variant-wise, LOD=nan if it has a Mendelian error. In both cases, LOD=0 if not calculated.
- 5) Only work for rare variants.
-
+ 
  Removed options:
- --raf STRs        in input, header of ref. allele frq. [EspEA_R]
- --wc FILE         well-covered regions
  --no-wt           Equal to "--wt-del=no --wt-vqs=no"
  --no-del          Do not weight or filter variants by deleteriousness
  */
@@ -103,7 +96,7 @@ void write_results(bool wrINFO, field_numbers& FldRes, const string& wrWhat, con
 		}
 }
 
-// remember to call ss.clear() before ss.seekg since the stream ss is in the eof state after reading.
+// call ss.clear() before ss.seekg() because the stream ss is in the eof state after reading.
 void rewind(stringstream& ss)
 {
 	ss.clear();
@@ -135,6 +128,7 @@ int main (int argc, char * const argv[])
 	string			h_dels;					// header of BayesDel defined by user
 	set<string>		h_grID = {perch::h_symb};	// header of group IDs
 	bool			do_nothing = false;
+	
 	// handle program arguments
 	perch::MisCut=1;
 	perch::VQSsnv=-INFINITY;
@@ -510,7 +504,7 @@ int main (int argc, char * const argv[])
 		}
 		prev_index.insert(this_index);
 
-		// determine whether is_snv
+		// determine variant type
 		string& ref = in[FldRef[0]];
 		string& alt = in[FldAlt[0]];
 		bool is_snv = ( (ref=="A" || ref=="T" || ref=="C" || ref=="G") && (alt=="A" || alt=="T" || alt=="C" || alt=="G") );
@@ -669,51 +663,8 @@ int main (int argc, char * const argv[])
 			if (!vQC.empty() && vQC!="PASS") { passed_filters=false; applied_filters+="vQC="+vQC+","; }
 		}
 		
-		// skip by VQSLOD
+		// read VQSLOD
 		double VQSLOD = get_value(INFO,"VQSLOD");
-		/*if (std::isnan(VQSLOD))
-		{
-			if (perch::VQSnan)	{ passed_filters=false; applied_filters+="noVQSLOD,"; }
-			if (perch::HFnoVQ || perch::hardft)
-			{
-				double infoQD = get_value(INFO,"QD"); // use double so that it is nan if not exist
-				double infoMQ = get_value(INFO,"MQ"); // nan automatically return false in comparison
-				double infoFS = get_value(INFO,"FS"); // so no need to check isnan()
-				double infoHS = get_value(INFO,"HaplotypeScore");
-				double infoMR = get_value(INFO,"MQRankSum");
-				double infoRP = get_value(INFO,"ReadPosRankSum");
-				if (perch::FiltQD) { if (infoQD<perch::FiltQD) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltMQ) { if (infoMQ<perch::FiltMQ) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltFS) { if (infoFS>perch::FiltFS) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltHS) { if (infoHS>perch::FiltHS) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltMR) { if (infoMR<perch::FiltMR) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltRP) { if (infoRP<perch::FiltRP) { passed_filters=false; applied_filters+="HardFilter,"; } }
-			}
-		}
-		else
-		{
-			if (is_snv) { if (VQSLOD<perch::VQSsnv) { passed_filters=false; applied_filters+="VQSLOD,"; } }
-			else		{ if (VQSLOD<perch::VQSidl) { passed_filters=false; applied_filters+="VQSLOD,"; } }
-			if (perch::hardft)
-			{
-				double infoQD = get_value(INFO,"QD"); // use double so that it is nan if not exist
-				double infoMQ = get_value(INFO,"MQ"); // nan automatically return false in comparison
-				double infoFS = get_value(INFO,"FS"); // so no need to check isnan()
-				double infoHS = get_value(INFO,"HaplotypeScore");
-				double infoMR = get_value(INFO,"MQRankSum");
-				double infoRP = get_value(INFO,"ReadPosRankSum");
-				if (perch::FiltQD) { if (infoQD<perch::FiltQD) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltMQ) { if (infoMQ<perch::FiltMQ) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltFS) { if (infoFS>perch::FiltFS) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltHS) { if (infoHS>perch::FiltHS) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltMR) { if (infoMR<perch::FiltMR) { passed_filters=false; applied_filters+="HardFilter,"; } }
-				if (perch::FiltRP) { if (infoRP<perch::FiltRP) { passed_filters=false; applied_filters+="HardFilter,"; } }
-			}
-		} //*/
-		
-		/*/ skip by FILTER
-		if (!FldFlt.no_input())
-			if (!perch::filflt.empty() && !exist_element(perch::filflt,in[FldFlt[0]])) { passed_filters=false; applied_filters+="FILTER,"; } //*/
 
 		// skip by BayesDel
 		double BayesDel = std::numeric_limits<double>::signaling_NaN();
@@ -756,13 +707,13 @@ int main (int argc, char * const argv[])
 			}
 		}
 
-		// skip by missing rate
+		/*/ skip by missing rate
 		if (perch::MisCut!=1)
 		{
 			// try { double MsgCSs=get_value(INFO,"MissingInCs"); if (MsgCSs>perch::MisCut) passed_filters=false; } catch (...) {}
 			// try { double MsgCTs=get_value(INFO,"MissingInCt"); if (MsgCTs>perch::MisCut) passed_filters=false; } catch (...) {}
 			try { double MsgAll=get_value(INFO,"MissingRate"); if (MsgAll>perch::MisCut) { passed_filters=false; applied_filters+="MissingRate,"; } } catch (...) {}
-		}
+		} //*/
 		
 		// parameters and default results
 		double th(0),al(1),lnkRes(0),lnkLH1(0),lnkLH0(0); // recombination rate, % of linkage, LOD, log10 Likelihood H1, log10 Likelihood H0
