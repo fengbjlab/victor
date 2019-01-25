@@ -97,12 +97,12 @@ inline int ReadSet_add(const std::string& input, Container& values, bool read_em
 	else				{ return 0; }
 	return -1; // never happen
 }
-/*template <typename Container>
+template <typename Container>
 inline int ReadSet(const std::string& input, Container& values, bool read_empty, std::string d=",:;|\\ \t\n", int ErrCode=-1)
 {
 	values.clear();
 	return ReadSet_add(input,values,read_empty,d,ErrCode);
-}*/
+}
 
 template <typename Container>
 inline void ReadSet(const std::vector<std::string>& args, size_t& argi, Container& values, std::string d=",:;|\\ \t\n", int ErrCode=-1)
