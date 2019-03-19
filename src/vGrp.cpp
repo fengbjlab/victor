@@ -416,7 +416,7 @@ int main (int argc, char * const argv[])
 			}
 			else
 			{
-				for (auto &l:this_set) *grpOut[output_ptr]<<l.second<<DLMTR<<GeneSetName<<endl;
+				for (auto &l:this_set) *grpOut[output_ptr]<<l.second<<DLMTR<<str_of_container(genes,',')<<endl; // prv GeneSetName<<endl
 			}
 			elog.add(num_gene_sets);
 			++output_ptr; if (output_ptr>=program.nt) output_ptr=0;

@@ -967,7 +967,7 @@ void compute(JobData& p)
 					table[1]=niA-xiA;
 					table[2]=xiU;
 					table[3]=niU-xiU;
-					double testAD = Fishers_exact_test_2x2(table,false);
+					double testAD = Fishers_exact_test_2x2(table,false,'2');
 					if (perch::_Debug) cerr<<table[0]<<' '<<table[1]<<' '<<table[2]<<' '<<table[3]<<' '<<testAD<<' '<<par.AF_dif<<endl;
 					if (testAD<=par.AF_dif) { do_log(reasons,this_index,25); if (toFilt) continue; }
 				}
@@ -1006,7 +1006,7 @@ void compute(JobData& p)
 						table[1]=iiA-miA;
 						table[2]=miU;
 						table[3]=iiU-miU;
-						testMR = Fishers_exact_test_2x2(table,false);
+						testMR = Fishers_exact_test_2x2(table,false,'2');
 					}
 					else
 					{
@@ -1932,26 +1932,29 @@ int main (int argc, char * const argv[])
 				if 		(spl.aff==1) ++t_ct;
 				else if	(spl.aff==2) ++t_cs;
 			}
-			int				np=2+CovMap.begin()->second.size();	// number of parameters (1 constance, 1 aff status, # covariates)
-			int				ni=t_cs+t_ct;						// number of individuals
-			Eigen::VectorXd y(ni);								// y
-			Eigen::MatrixXd X(ni,np);							// X
-			int j=0;
-			for (auto &spl:samples)
+			if (t_cs && t_ct)
 			{
-				if (!exist_element(CovMap,spl.ID)) continue;
-				if (spl.aff!=1 && spl.aff!=2) continue;
-				y(j)  =spl.rhe+spl.rho;
-				X(j,0)=1;
-				X(j,1)=spl.aff-1;
-				if (perch::_Debug) program.outf<<spl.ID<<DLMTR<<y(j)<<DLMTR<<X(j,1);
-				for (size_t c=0;c<CovMap[spl.ID].size();++c) { X(j,c+2)=CovMap[spl.ID][c]; if (perch::_Debug) program.outf<<DLMTR<<X(j,c+2); }
-				if (perch::_Debug) program.outf<<endl;
-				++j;
+				int				np=2+CovMap.begin()->second.size();	// number of parameters (1 constance, 1 aff status, # covariates)
+				int				ni=t_cs+t_ct;						// number of individuals
+				Eigen::VectorXd y(ni);								// y
+				Eigen::MatrixXd X(ni,np);							// X
+				int j=0;
+				for (auto &spl:samples)
+				{
+					if (!exist_element(CovMap,spl.ID)) continue;
+					if (spl.aff!=1 && spl.aff!=2) continue;
+					y(j)  =spl.rhe+spl.rho;
+					X(j,0)=1;
+					X(j,1)=spl.aff-1;
+					if (perch::_Debug) program.outf<<spl.ID<<DLMTR<<y(j)<<DLMTR<<X(j,1);
+					for (size_t c=0;c<CovMap[spl.ID].size();++c) { X(j,c+2)=CovMap[spl.ID][c]; if (perch::_Debug) program.outf<<DLMTR<<X(j,c+2); }
+					if (perch::_Debug) program.outf<<endl;
+					++j;
+				}
+				double pv = pv_1st_linear(X,y,false);
+				if (pv<0.05) 	lns<<showw<<"The number of RVs per sample is significantly different between cases and controls adjusted for covariates. p-value="<<pv<<flush_logger;
+				else 			lns<<showl<<"The number of RVs per sample is not significantly different between cases and controls adjusted for covariates. p-value="<<pv<<flush_logger;
 			}
-			double pv = pv_1st_linear(X,y,false);
-			if (pv<0.05) 	lns<<showw<<"The number of RVs per sample is significantly different between cases and controls adjusted for covariates. p-value="<<pv<<flush_logger;
-			else 			lns<<showl<<"The number of RVs per sample is not significantly different between cases and controls adjusted for covariates. p-value="<<pv<<flush_logger;
 		}
 		
 		// sample-wise QC based on relatedness
@@ -2032,23 +2035,39 @@ int main (int argc, char * const argv[])
 				set<string> 		PedErr_ind;
 				map<string,double>	PedErr_phi;
 				map<string,double>	PedErr_kin;
+				set<string> 		PedWng_ind;
+				map<string,double>	PedWng_phi;
+				map<string,double>	PedWng_kin;
 				for (Rows_in_File(in,KINGprefix+".kin",10))
 				{
 					if (in[0]=="FID") continue;
-					if (in[9]!="1") continue;
-					PedErr_ind.insert(in[0]+"\t"+in[1]);
-					PedErr_ind.insert(in[0]+"\t"+in[2]);
-					double phi; if (!read_val_noNaN(in[5],phi)) exit_error("failed to read Phi from "+KINGprefix+".kin");
-					double kin; if (!read_val_noNaN(in[8],kin)) exit_error("failed to read Kinship from "+KINGprefix+".kin");
-					if (phi<PedErrPhKn && kin<PedErrPhKn) continue;
-					PedErr_phi.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],phi));
-					PedErr_kin.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],kin));
+					if (in[9]=="1")
+					{
+						PedErr_ind.insert(in[0]+"\t"+in[1]);
+						PedErr_ind.insert(in[0]+"\t"+in[2]);
+						double phi; if (!read_val_noNaN(in[5],phi)) exit_error("failed to read Phi from "+KINGprefix+".kin");
+						double kin; if (!read_val_noNaN(in[8],kin)) exit_error("failed to read Kinship from "+KINGprefix+".kin");
+						if (phi<PedErrPhKn && kin<PedErrPhKn) continue;
+						PedErr_phi.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],phi));
+						PedErr_kin.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],kin));
+					}
+					if (in[9]=="0.5")
+					{
+						PedWng_ind.insert(in[0]+"\t"+in[1]);
+						PedWng_ind.insert(in[0]+"\t"+in[2]);
+						double phi; if (!read_val_noNaN(in[5],phi)) exit_error("failed to read Phi from "+KINGprefix+".kin");
+						double kin; if (!read_val_noNaN(in[8],kin)) exit_error("failed to read Kinship from "+KINGprefix+".kin");
+						if (phi<PedErrPhKn && kin<PedErrPhKn) continue;
+						PedWng_phi.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],phi));
+						PedWng_kin.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],kin));
+					}
 				}
 				
+				// find true_errors
+				vector<string> true_errors;
 				if (!PedErr_ind.empty())
 				{
 					// check Phi
-					vector<string> true_errors;
 					if (!par.ped_in.empty())
 					{
 						string uID=random_string(12);
@@ -2078,12 +2097,59 @@ int main (int argc, char * const argv[])
 							true_errors.push_back(l.first+"\t"+ftos(l.second)+"\t"+ftos(PedErr_kin[l.first]));
 						}
 					}
-					
-					// write output
-					openOutFile_or_exit(PedErr_out,program.prefix()+".ped_errors");
-					if (!true_errors.empty()) print_container(true_errors,PedErr_out,'\n',true);
-					closefile(PedErr_out);
 				}
+				// write output
+				openOutFile_or_exit(PedErr_out,program.prefix()+".ped_errors");
+				if (!true_errors.empty())
+				{
+					PedErr_out<<"PedID\tIndID1\tIndID2\tExpKin\tObsKin"<<endl;
+					print_container(true_errors,PedErr_out,'\n',true);
+				}
+				closefile(PedErr_out);
+
+				// find true_warnings
+				vector<string> true_warnings;
+				if (!PedWng_ind.empty())
+				{
+					// check Phi
+					if (!par.ped_in.empty())
+					{
+						string uID=random_string(12);
+						openOutFile_or_exit(file1,perch::TMPDIR+"pedpro_"+uID+".ind");
+						file1<<"PID\tIID\n";
+						print_container(PedWng_ind,file1,'\n',true);
+						closefile(file1);
+						string result=exec("pedpro --ped \""+par.ped_in+"\" --kin-of \""+perch::TMPDIR+"pedpro_"+uID+".ind\" > \""+perch::TMPDIR+"pedpro_"+uID+".out\"",false);
+						map<string,double>	true_kinship; // true kinship coefficient calculated by pedpro
+						for (Rows_in_File(in,perch::TMPDIR+"pedpro_"+uID+".out",4))
+						{
+							if (in[3]=="kinship") continue;
+							double kin; if (!read_val_noNaN(in[3],kin)) exit_error("failed to read Kinship from "+perch::TMPDIR+"pedpro_"+uID+".out");
+							true_kinship.insert(std::make_pair(in[0]+"\t"+in[1]+"\t"+in[2],kin));
+							true_kinship.insert(std::make_pair(in[0]+"\t"+in[2]+"\t"+in[1],kin));
+						}
+						for (auto &l:PedWng_phi)
+						{
+							if (exist_element(true_kinship,l.first)&&true_kinship[l.first]==l.second)
+								true_warnings.push_back(l.first+"\t"+ftos(l.second)+"\t"+ftos(PedWng_kin[l.first]));
+						}
+					}
+					else
+					{
+						for (auto &l:PedWng_phi)
+						{
+							true_warnings.push_back(l.first+"\t"+ftos(l.second)+"\t"+ftos(PedWng_kin[l.first]));
+						}
+					}
+				}
+				// write output
+				openOutFile_or_exit(PedWng_out,program.prefix()+".ped_warnings");
+				if (!true_warnings.empty())
+				{
+					PedWng_out<<"PedID\tIndID1\tIndID2\tExpKin\tObsKin"<<endl;
+					print_container(true_warnings,PedWng_out,'\n',true);
+				}
+				closefile(PedWng_out);
 			}
 		}
 		return 0;

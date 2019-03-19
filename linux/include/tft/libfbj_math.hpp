@@ -418,7 +418,7 @@ inline void test_2x2(T1 table[2][2],T2& p)
 	
 	if (expct[0][0]<1 || expct[0][1]<1 || expct[1][0]<1 || expct[1][1]<1)
 	{
-		p=Fishers_exact_test_2x2(table,false);
+		p=Fishers_exact_test_2x2(table,false,'2');
 	}
 	else
 	{	// x2= (ad-bc)^2(a+b+c+d-1) / (a+b)(c+d)(b+d)(a+c)
@@ -446,7 +446,7 @@ inline void test_2x2_array(T1 table[4],T2& p)
 	
 	if (expct[0]<1 || expct[1]<1 || expct[2]<1 || expct[3]<1)
 	{
-		p=Fishers_exact_test_2x2(table,false);
+		p=Fishers_exact_test_2x2(table,false,'2');
 	}
 	else
 	{	// x2= (ad-bc)^2(a+b+c+d-1) / (a+b)(c+d)(b+d)(a+c)

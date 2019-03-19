@@ -1098,21 +1098,25 @@ void _run_job(JobData& p)
 	else if ((AnalysisMethod==CL2 || AnalysisMethod==FET) && FETiwt) // count damaged haplotypes || Fisher's exact test with mid-p method by Irwin's rule
 	{
 		struct SubGroupData {
+			vector<int> cgA;			// count 0/0 0/1 1/1 for affected
+			vector<int> cgU;			// count 0/0 0/1 1/1 for unaffected
 			int		ss[2];
 			double 	table[4];
-			SubGroupData() { ss[0]=ss[1]=0; table[0]=table[1]=table[2]=table[3]=0; }
+			SubGroupData() { ss[0]=ss[1]=0; table[0]=table[1]=table[2]=table[3]=0; cgA={0,0,0}; cgU={0,0,0}; }
 			void add(double aff, int g, double wt)
 			{
 				if (aff)
 				{
 					table[2] += (2-g)* wt;	// Diseased not-exposed
 					table[3] +=    g * wt;	// Diseased Exposed
+					++cgA[g];
 					++ss[1];
 				}
 				else
 				{
 					table[0] += (2-g)* wt;	// Healthy not-exposed
 					table[1] +=    g * wt;	// Healthy Exposed
+					++cgU[g];
 					++ss[0];
 				}
 			}
@@ -1125,6 +1129,8 @@ void _run_job(JobData& p)
 			if (g>=0) SubGrp[strata[i]].add(DepVar[i],g,origWt[i]);
 		}
 		
+		vector<int> cgA = { 0,0,0 };	// count 0/0 0/1 1/1 for affected
+		vector<int> cgU = { 0,0,0 };	// count 0/0 0/1 1/1 for unaffected
 		double HN = 0; // Healthy not-exposed
 		double HE = 0; // Healthy Exposed
 		double DN = 0; // Diseased not-exposed
@@ -1140,6 +1146,7 @@ void _run_job(JobData& p)
 			HE+=x.second.table[1];
 			DN+=x.second.table[2];
 			DE+=x.second.table[3];
+			for (int g=0;g<3;++g) { cgA[g]+=x.second.cgA[g]; cgU[g]+=x.second.cgU[g]; }
 		}
 		for (auto &x:to_remove) SubGrp.erase(x);
 		bool cc = immedC || (delayC && (HN==0||HE==0||DN==0||DE==0));
@@ -1157,16 +1164,14 @@ void _run_job(JobData& p)
 		double mh_rci=std::numeric_limits<double>::signaling_NaN();
 		for (auto &x:SubGrp)
 		{
-			int table[4];
-			table[0]=(int)(x.second.table[0]+0.5);
-			table[1]=(int)(x.second.table[1]+0.5);
-			table[2]=(int)(x.second.table[2]+0.5);
-			table[3]=(int)(x.second.table[3]+0.5);
+			double table[4];
+			table[0]=x.second.table[0];
+			table[1]=x.second.table[1];
+			table[2]=x.second.table[2];
+			table[3]=x.second.table[3];
 			if (table[0]+table[1] && table[2]+table[3] && table[0]+table[2] && table[1]+table[3])
 			{
-				FisherExactTest fet(true);
-				fet.input_RxC(table,2,2);
-				double pv = one_sided ? fet.result('R') : fet.result('2');
+				double pv = Fishers_exact_test_2x2(table,true,one_sided?'R':'2');
 				double ct = x.second.ss[0];
 				double cs = x.second.ss[1];
 				double n = int(4/(1/cs+1/ct)+0.5);
@@ -1223,14 +1228,16 @@ void _run_job(JobData& p)
 			}
 			else
 			{
-				p.out = p.chr_str()+"\t"+itos(p.idx.size())+"\t"+ftos(mlp)+"\t"+ftos(mh_or)+"\t["+ftos(mh_lci)+","+ftos(mh_rci)+"]"+"\t"+ftos(DN)+"\t"+ftos(DE)+"\t.\t"+ftos(HN)+"\t"+ftos(HE)+"\t.";
+				p.out = p.chr_str()+"\t"+itos(p.idx.size())+"\t"+ftos(mlp)+"\t"+ftos(mh_or)+"\t["+ftos(mh_lci)+","+ftos(mh_rci)+"]"+"\t"+str_of_container(cgA,'\t')+"\t"+str_of_container(cgU,'\t');
+				// prv: ftos(DN)+"\t"+ftos(DE)+"\t.\t"+ftos(HN)+"\t"+ftos(HE)+"\t.";
 				// the 4th column of this output is also read by vGrp --detail
 			}
 		}
 		else
 		{
 			if (AnalysisMethod==FET) p.out=MisStr;
-			else p.out = p.chr_str()+"\t"+itos(p.idx.size())+"\tNA\tNA\t[NA,NA]"+"\t"+ftos(DN)+"\t"+ftos(DE)+"\t.\t"+ftos(HN)+"\t"+ftos(HE)+"\t.";
+			else p.out = p.chr_str()+"\t"+itos(p.idx.size())+"\tNA\tNA\t[NA,NA]"+"\t"+str_of_container(cgA,'\t')+"\t"+str_of_container(cgU,'\t');
+			// prv: ftos(DN)+"\t"+ftos(DE)+"\t.\t"+ftos(HN)+"\t"+ftos(HE)+"\t.";
 		}
 	}
 	else if (AnalysisMethod==RNK)
@@ -2306,11 +2313,11 @@ int main (int argc, char * const argv[])
 			if (FldRef.no_input()) exit_error("The REF/Ref column is missing.");
 			if (FldAlt.no_input()) exit_error("The ALT/Alt column is missing.");
 			if (FldCSs.no_input() &&  (AnalysisMethod==SSU||AnalysisMethod==FLR||AnalysisMethod==REG||AnalysisMethod==HLR||AnalysisMethod==FET||AnalysisMethod==OPN||AnalysisMethod==POL||AnalysisMethod==RNK)) exit_error("Find no cases.");
-			if (FldCTs.no_input() &&  (AnalysisMethod==SSU||AnalysisMethod==FLR||AnalysisMethod==REG||AnalysisMethod==HLR||AnalysisMethod==FET||AnalysisMethod==OPN||AnalysisMethod==POL||AnalysisMethod==RNK) && ExtCT::ExAC_pfx.empty()) exit_error("Find no controls.");
-			if (perch::is_qtl()   && !(AnalysisMethod==SSU||(AnalysisMethod==REG&&regress==&pv_1st_linear))) exit_error("There are affection status that are not 1 nor 2.");
+			if (FldCTs.no_input() &&  (AnalysisMethod==SSU||AnalysisMethod==FLR||AnalysisMethod==HLR||AnalysisMethod==FET||AnalysisMethod==OPN||AnalysisMethod==POL||AnalysisMethod==RNK) && ExtCT::ExAC_pfx.empty()) exit_error("Find no controls.");
+			//if (perch::is_qtl() && !(AnalysisMethod==DET||AnalysisMethod==SSU||(AnalysisMethod==REG&&regress==&pv_1st_linear))) exit_error("QTL not supported");
 			if (FldCSs.size()<h_csID.size()) lns<<showl<<h_csID.size()-FldCSs.size()<<" cases in the Sample File cannot be found in the Genotype File."<<flush_logger;
 			if (FldCTs.size()<h_ctID.size()) lns<<showl<<h_ctID.size()-FldCTs.size()<<" controls in the Sample File cannot be found in the Genotype File."<<flush_logger;
-			lns<<showl<<"There are "<<FldCSs.size()<<" cases and "<<FldCTs.size()<<" controls."<<flush_logger;
+			lns<<showl<<"There are "<<FldCSs.size()<<" cases and "<<FldCTs.size()<<" controls remaining for analysis."<<flush_logger;
 			if (AnalysisMethod==FET)
 			{
 				if (!ExtCT::ExAC_pfx.empty())
@@ -2557,6 +2564,8 @@ read_var_group:
 		prev_index.insert(VarIndex);
 		
 		// skip if not an SNV || is an SV
+		boost::to_upper(in[FldRef[0]]);
+		boost::to_upper(in[FldAlt[0]]);
 		string& ref = in[FldRef[0]];
 		string& alt = in[FldAlt[0]];
 		bool is_snv = ( (ref=="A" || ref=="T" || ref=="C" || ref=="G") && (alt=="A" || alt=="T" || alt=="C" || alt=="G") );
@@ -2919,7 +2928,8 @@ read_var_group:
 			if (!std::isnan(PRS_freq) && !std::isnan(loc_freq))
 			{
 				if ((PRS_freq>0.5&&loc_freq<0.5)||(PRS_freq<0.5&&loc_freq>0.5))
-					lns<<showw<<"PRS_freq doesn't match with allele frequency in --af, please check "<<VarIndex<<flush_logger;
+					if ((ref=="C"&&alt=="G")||(ref=="G"&&alt=="C")||(ref=="A"&&alt=="T")||(ref=="T"&&alt=="A"))
+						lns<<showw<<"PRS_freq doesn't match with allele frequency in --af, please check "<<VarIndex<<flush_logger;
 			}
 			if (PRSPAF) { if (rsk=='A') maf=PAF; else maf=1-PAF; }
 			else		maf=(!std::isnan(loc_freq)?loc_freq:PRS_freq);

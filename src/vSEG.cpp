@@ -308,7 +308,7 @@ int main (int argc, char * const argv[])
 
 		// sex and aff
 		int sex=perch::read_sex(in[4]); if (sex==0) exit_error("Sex in Pedigree File should be either 1 (male) or 2 (female).");
-		double aff=perch::read_aff(in[5]);
+		double aff=perch::read_aff(in[5],"0");
 		L2SEX.push_back(sex);
 		if (aff==2) L2AFF.push_back(1);
 		else		L2AFF.push_back(0);

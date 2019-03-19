@@ -117,7 +117,7 @@ int main (int argc, char * const argv[])
 			if (exist_element(perch::rm_ind,in[Spl_ID])) continue; // skip samples to be removed
 			
 			int		sex = perch::read_sex(in[SplSex]);
-			double	dep = perch::read_aff(in[SplAff]);
+			double	dep = perch::read_aff(in[SplAff],"UnknAff");
 			SexMap[in[Spl_ID]]=sex;
 			if		(dep==2) h_csID.insert(in[Spl_ID]);
 			else if (dep==1) h_ctID.insert(in[Spl_ID]);
@@ -205,7 +205,7 @@ int main (int argc, char * const argv[])
 						if (exist_element(h_csID,SeqID)) h_csID.erase(SeqID);
 						if (exist_element(h_ctID,SeqID)) h_ctID.erase(SeqID);
 						perch::read_sex(pi[4]);
-						perch::read_aff(pi[5]);
+						perch::read_aff(pi[5],"UnknAff");
 						if (SeqID!="0")  { s2plID[SeqID]=make_pair(pi[0],pi[1]); 											ped_toRepl.push_back(pi.contents()); if (!AddDel) pi[0]=pi[1]; ped_toKeep.push_back(pi.contents()); }
 						else if (AddNew) { if (AddDel) xtraID.push_back(pi[0]+id_del+pi[1]); else xtraID.push_back(pi[1]); 	ped_toRepl.push_back(pi.contents()); if (!AddDel) pi[0]=pi[1]; ped_toKeep.push_back(pi.contents()); }
 					}

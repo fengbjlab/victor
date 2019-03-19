@@ -318,7 +318,7 @@ int main (int argc, char * const argv[])
 					else exit_error(ped+" allele1 allele2 should be 0 or 1 or 2.");
 				}
 				int sex = perch::read_sex(pi[SEX]);
-				double aff = perch::read_aff(pi[AFF]);
+				double aff = perch::read_aff(pi[AFF],"0");
 				if (sex==0)			 sex=unknown_sex;
 				if (std::isnan(aff)) aff=unknown_aff;
 				

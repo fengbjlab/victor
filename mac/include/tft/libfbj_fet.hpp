@@ -7,6 +7,7 @@
 #define FET_MAX_R 100
 
 #include <iostream>
+#include <vector>
 #include <cmath>
 #include <cstring> // to compile memset memcpy memcmp by "gcc/4.7.2/bin/g++ -std=c++11" but not "gcc/4.1.2/bin/g++"
 #include "libfbj_factorial.hpp"
@@ -78,6 +79,17 @@ public:
 		modified=true;
 	}
 	
+	template <typename T>
+	inline void input_RxC(std::vector<T>table, int nr, int nc)
+	{
+		for (int ij=0,r=0;r<nr;++r)
+			for (int  c=0;c<nc;++c,++ij)
+				FET_a[r][c]=table[ij];
+		FET_r=nr;
+		FET_c=nc;
+		modified=true;
+	}
+	
 	inline long double result(const char& side='2') // the p value is two-tailed by default
 	{
 		if (FET_r<=0 || FET_c<=0) { exit_error("FET:Number of rows/columns <=0. Please call set_empty_table()."); }
@@ -93,21 +105,10 @@ public:
 	}
 };
 
-template <typename T>
-inline double Fishers_exact_test_2x2(T table[], bool mp)
-{
-	FisherExactTest fet(mp);
-	fet.input_RxC(table,2,2);
-	return fet.result();
-}
-
-template <typename T>
-inline double Fishers_exact_test_RxC(T table[], int nr, int nc, bool mp)
-{
-	FisherExactTest fet(mp);
-	fet.input_RxC(table,nr,nc);
-	return fet.result();
-}
+double Fishers_exact_test_2x2(int table[], bool mp, const char& side);
+double Fishers_exact_test_RxC(int table[], int nr, int nc, bool mp, const char& side);
+double Fishers_exact_test_2x2(double table[], bool mp, const char& side);
+double Fishers_exact_test_RxC(double table[], int nr, int nc, bool mp, const char& side);
 
 /*/ debug FET
 double p;

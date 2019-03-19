@@ -12,7 +12,7 @@
 # 1. Add /path/to/VICTOR to your PATH.
 # 2. Copy this scrip to a working directory where you have write permissions. Optionally, put a par.txt in the same directory. See Manual about par.txt.
 # 3. Optionally, add #SBATCH options above. Such as --account --partition --mail-user --mail-type.
-# 4. Set parameters including "Set PATH", "What to do", "Main Parameters", "PERCH Parameters", "PERCH sub-analysis", and "Other Programs".
+# 4. Set parameters including "Set PATH", "What to do", "Main Parameters", "Other Programs", "PERCH files", "PERCH Parameters", and "PERCH sub-analysis".
 # 5. Submit a job to a computer cluster by "victor.sbatch --array=1 slurm.all_steps".
 # 6. Check errors and warnings (See "Explanations" below). Inspect results files (see "What to do" below).
 
@@ -20,7 +20,7 @@
 # 1. Add /path/to/VICTOR to your PATH.
 # 2. Copy this scrip to a working directory where you have write permissions. Optionally, put a par.txt in the same directory. See Manual about par.txt.
 # 3. Optionally, add #SBATCH options above. Such as --account --partition --mail-user --mail-type.
-# 4. Set parameters including "Set PATH", "Main Parameters", "PERCH Parameters", "PERCH sub-analysis", and "Other Programs".
+# 4. Set parameters including "Set PATH", "Main Parameters", "Other Programs", "PERCH files", "PERCH Parameters", and "PERCH sub-analysis".
 # 5. Change the "What to do" ("yes" to STEP_0 to SPL_QC, "no" to anything after), submit a job by "victor.sbatch --array=1 slurm.all_steps".
 # 6. Review the files $OUT.sample_rm and $OUT.1st.sample_qc. Modify the "Sample-wise QC Filters" cutoff values or other parameters if necessary.
 # 7. If you did not install PROVEAN, submit $OUT.for_PROV to provean.jcvi.org, download xxx.result.one.tsv, then set PVN=xxx.result.one.tsv.
@@ -48,16 +48,16 @@
 #   grep -i completed slurm.all_steps.run_#.stderr
 
 # Tips for gene panel sequencing. 
-# Some sample-wise quality measures in gene panel data do not have the same distribution as those in the genomic scale. 
-# The default cutoff values in this script are designed for WES/WGS, so you may want to change the cutoff values for your data. 
-# However, the appropriate cutoff values may vary from panel to panel. The best way to solve it is to run an analysis without step_2, step_3, and step_4.
-# Then, see whether $OUT.sample_rm removed too many samples, and see the $OUT.1st.sample_qc for the distribution of Het/Hom and TiTv values and determine 
-# the appropriate cutoff values. Then, run the analysis again starting from SPL_QC (i.e., STEP_0 and STEP_1 are no, others are yes).
+# Some sample-wise quality measures in gene panel data do not have the same distribution as those in the genome-wide scale. 
+# The default cutoff values in this script are designed for WES/WGS, so you may want to change the cutoff values for a gene-panel sequencing experiment.
+# However, the appropriate cutoff values may vary from panel to panel. The best way to solve it is to run an analysis without step_2, step_3, step_4,
+# find the appropriate cutoff for Het/Hom and Ti/Tv, set the parameters, and run analysis starting from SPL_QC (STEP_0,STEP_1 are no, others are yes).
+# Distribution of Het/Hom, Ti/Tv and other QC metrics can be obtained from $OUT.1st.sample_qc.
 
 # Tips for non-European populations.
 # You may want to change the cutoff values for Het/Hom ratio if your study population is not European. The procedures are in the previous paragraph.
 
-# ----------------------------------------------------------------- beginning_of_parameters -----------------------------------------------------------------
+# ----------------------------------------------------------------- parameters_section_1/2 -----------------------------------------------------------------
 
 # Set PATH.
 # If you have not added VICTOR to your PATH, un-comment "export PATH=/path/to/VICTOR:$PATH" and replace /path/to; otherwise, no need to do anything.
@@ -113,13 +113,13 @@ export QCJ=                                     # optional. Parameters for quali
 export VAM=                                     # optional. Parameters for MaxAF annotation by vAnnDel.
 export KEEP_REL=                                # optional. If $AAA has --weight, set KEEP_REL=yes to keep related individuals except duplicates / mz-twins.
 export KEEP_COMMON=0.2                          # optional. Keep non-functional variants that have a MaxAF>$KEEP_COMMON for PED_QC/REL_QC but not STEP3/4.
-export VAR_MISS=0.01                            # Per variant missing rate cutoff. Don't set it >0.02. VAR_MISS=1 to disable this filter.
-export SPL_MISS=0.005                           # Per sample missing rate cutoff. Don't set it >0.05.  SPL_MISS=1 to disable this filter.
-export HeHo_Cut=4                               # For sample-wise QC, Het/Hom ratio cutoff. HeHo_Cut=0 to disable this filter.
-export TiTv_Cut=2.5                             # For sample-wise QC, Ti/Tv ratio cutoff.   TiTv_Cut=0 to disable this filter.
-export Conc_Cut=99                              # For sample-wise QC, concordance cutoff.   Conc_Cut=0 to disable this filter.
-export AvGQ_Cut=55                              # For sample-wise QC, mean GQ cutoff.       AvGQ_Cut=0 to disable this filter.
-export AvDP_Cut=20                              # For sample-wise QC, mean DP cutoff.       AvDP_Cut=0 to disable this filter.
+export VAR_MISS=0.01                            # Exclude variants with a high missing rate. VAR_MISS=1 to disable this filter.
+export SPL_MISS=0.005                           # For sample-wise QC, missing rate cutoff.   SPL_MISS=1 to disable this filter.
+export HeHo_Cut=4                               # For sample-wise QC, Het/Hom ratio cutoff.  HeHo_Cut=0 to disable this filter.
+export TiTv_Cut=2.5                             # For sample-wise QC, Ti/Tv ratio cutoff.    TiTv_Cut=0 to disable this filter.
+export Conc_Cut=99                              # For sample-wise QC, concordance cutoff.    Conc_Cut=0 to disable this filter.
+export AvGQ_Cut=55                              # For sample-wise QC, mean GQ cutoff.        AvGQ_Cut=0 to disable this filter.
+export AvDP_Cut=20                              # For sample-wise QC, mean DP cutoff.        AvDP_Cut=0 to disable this filter.
 export IM2=                                     # optional. Prefix of VCFs created by slurm.impute2mrg. Fullnames are $IM2.chr$CHR.mrg.qc.vcf.gz.
 export USE_TABIX=                               # optional. Set USE_TABIX=yes if $VCF is small.
 # For step 2
@@ -163,21 +163,6 @@ export PMT=                                     # For future use.
 # Note F: If your Sample File and Pedigree File for QC are different from those for association and linkage analysis, set the files for QC to $SPL and $SEG;
 #         then, set the files for analysis to $SPL_FILE and $PED_FILE below.
 
-# PERCH Parameters. All arrays have the same number of items. Each column is a set of parameters for one analysis. You can add / remove / modify a column.
-# If you have a different $SPL and/or $PED for QC and PERCH analysis, change the $SPL2 and/or $PED2 below.
-export SPL2="$SPL"
-export PED2="$PED"
-export RUN_NAME=( combined       burden           detail                    collapse          varRank                   )
-export SPL_FILE=( "$SPL2"        "$SPL2"          "$SPL2"                   "$SPL2"           "$SPL2"                   )
-export PED_FILE=( "$PED2"        ""               ""                        ""                "$PED2"                   )
-export VAAA_OPT=( "$AAA"         "$AAA --out-mlp" "$AAA --detail --show-id" "$AAA --collapse" "$AAA --single"           )
-export VSEG_OPT=( "$SEG"         ""               ""                        ""                "$SEG --single"           )
-export VFIN_OPT=( "$FIN"         "$FIN"           "$FIN"                    "$FIN"            "$FIN --vc --prior=0.005" )
-
-# PERCH sub-analysis. All arrays have the same number of items. Each column is a set of parameters for one analysis. You can add / remove / modify a column.
-export SUB_NAME=( default  lof_only      dom_neg      )
-export SUB_PARS=( ""       "--lof-only"  "--dom-neg"  )
-
 # Other Programs. Ask your computer manager about how to use GNU parallel, tabix, PLINK 1.9, KING, and GATK.
 # If GNU parallel or GATK complains about not being able to write in /tmp, un-comment the next line and add -Djava.io.tmpdir=./ to $GATK.
 # export TMPDIR=./
@@ -187,19 +172,11 @@ export GATK="java -Xmx2g -jar /path/to/gatk.jar -R /path/to/reference_genome.fas
 export PLINK19="plink_1.9 --allow-no-sex"
 export KING=king
 
-# -------------------------------------------------------------------- end_of_parameters --------------------------------------------------------------------
-
-# Check study design
-if [ `grep -i unaffected ${SPL_FILE[0]} | wc -l` -gt 0 ]; then 
-  export CASE_ONLY=no 
-else
-  export CASE_ONLY=yes
-  if [ "$STEP4C" != yes ]; then >&2 echo $SLURM_JOB_NAME': Warning: a case-only design without comparison to ExAC is not recommended.'; fi
-fi
-
+# -------------------------------------------------------------------- end_of_section1/2 --------------------------------------------------------------------
+  
 # Check parameters
 if [ "$OUT" == "" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: OUT in the "Main Parameters" cannot be empty'; exit 1; fi
-if [ "$SPL" == "" ] && [[ "$QC1" != *"--do-nothing"* ]]; then echo >&2 $SLURM_JOB_NAME': !!! Error: SPL in the "Main Parameters" cannot be empty'; exit 1; fi
+if [ "$SPL" == "" ] && [[ "$QC1" != *"--do-nothing"* ]]; then echo >&2 $SLURM_JOB_NAME': !!! Error: SPL in "Main Parameters" cannot be empty'; exit 1; fi
 if [ "$SPL" != "" ] && [ ! -s "$SPL" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$SPL' not exist or empty.'; exit 1; fi
 if [ "$PED" != "" ] && [ ! -s "$PED" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$PED' not exist or empty.'; exit 1; fi
 if [ "$CHF" != "" ] && [ ! -s "$CHF" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$CHF' not exist or empty.'; exit 1; fi
@@ -213,7 +190,7 @@ if [ "$VAR_MISS" != "" ]; then export QC1="--filt-miss-rate=$VAR_MISS $QC1"; fi
 if [ "$SPL_MISS" == "" ]; then export SPL_MISS=0.005; fi
 if [ "$PHA" == ShapeIt ] && [ "$MAP" == "" ]; then >&2 echo $SLURM_JOB_NAME': !!! Error: MAP not set.'; exit 1; fi
 if [ "$PHA" == BEAGLE  ] && [ "$BGL" == "" ]; then >&2 echo $SLURM_JOB_NAME': !!! Error: BGL not set.'; exit 1; fi
-if [ `head -1 $SPL | tr '\t' '\n' | grep -i ^pop$ | wc -l` -eq 1 ] && [ "$SPL_PC" == yes ]; then >&2 echo $SLURM_JOB_NAME': !!! Error: SPL has pop'; exit 1; fi
+if [ `head -1 $SPL|tr '\t' '\n'|grep -i ^pop$|wc -l` -eq 1 ] && [ "$SPL_PC" == yes ]; then >&2 echo $SLURM_JOB_NAME': !!! Error: SPL has pop'; exit 1; fi
 if   [[ "`uname | tr '[:upper:]' '[:lower:]'`" == linux  ]]; then
   export ZCAT=zcat
   export NCPU=`nproc`
@@ -274,7 +251,7 @@ if [ -s "$PED" ]; then
   if [ `grep "Found circles" $JOB_LOG.ped.log | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$PED' has marriage loops'; exit 1; fi
   if [ `grep "Found loops" $JOB_LOG.ped.log | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$PED' has consanguinity loops'; exit 1; fi
   if [ `grep "Found multiple clusters" $JOB_LOG.ped.log | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: '$PED' has isolates'; exit 1; fi
-  if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! '$PED has errors. Please check $JOB_LOG.ped.log; exit 1; fi
+  if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr|wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! '$PED has errors. Check $JOB_LOG.ped.log; exit 1; fi
   if [ `grep -i error $JOB_LOG.ped.log | grep -v ' 0 error' | wc -l` -gt 0 ]; then
     echo >&2 $SLURM_JOB_NAME': !!! '$PED has errors. Please check $JOB_LOG.ped.log
     exit 1
@@ -296,7 +273,7 @@ fi
 
 # Step 0: split a VCF by chromosome and split multi-allelic variants
 if [ "$STEP_0" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to split a VCF by chromosome and split multi-allelic variants'
+  echo >&2 $SLURM_JOB_NAME': begin to split a VCF by chromosome and split multi-allelic variants '$(date)
   if [ "$VCF" == "" ]; then echo >&2 $SLURM_JOB_NAME': !!! Error: VCF in the "Main Parameters" cannot be empty'; exit 1; fi
   if [ "$VCF" != "" ] && [ ! -f "$VCF"     ];  then echo >&2 $SLURM_JOB_NAME': !!! Error: '$VCF' is not a file or does not exist'; exit 1; fi
   if [ "$VCF" != "" ] && [ ! -f "$VCF.tbi" ];  then echo >&2 $SLURM_JOB_NAME': !!! Error: '$VCF' is not tabix-indexed'; exit 1; fi
@@ -307,12 +284,12 @@ if [ "$STEP_0" == yes ]; then
   TABIXERROR="the index file either does not exist or is older than the vcf file. Please reindex."
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP_0'; exit 1; fi
   if [ `grep -i "$TABIXERROR" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP_0'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': STEP_0 completed'
+  echo >&2 $SLURM_JOB_NAME': STEP_0 completed '$(date)
 fi
 
 # Step 1: variant-wise quality control and basic annotations
 if [ "$STEP_1" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to do variant-wise quality control and basic annotations'
+  echo >&2 $SLURM_JOB_NAME': begin to do variant-wise quality control and basic annotations '$(date)
   my_func() { INP=$OUT.chr$1.vcf.gz SPL=$SPL PED=$PED \
               VAM=$VAM AN1=$AN1 AN2=$AN2 AN3=$AN3 AN4=$AN4 AN5=$AN5 KEEP_COMMON=$KEEP_COMMON \
               QC1="$RMS --sample-qc=$OUT.chr$1.sample_qc --out-vqs=$OUT.chr$1.vqslod --nt=$QC_THREADS $QC1" \
@@ -324,7 +301,7 @@ if [ "$STEP_1" == yes ]; then
   if [[ "$QC1" != *"--do-nothing"* ]]; then vQC --prefix $OUT.1st $QCJ --join-sample-qc $OUT.chr*.sample_qc; fi
   if [ -s $OUT.vqslod ]; then vQS $OUT.vqslod > $OUT.vqslod_cutoff; fi
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP_1'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': STEP_1 completed'
+  echo >&2 $SLURM_JOB_NAME': STEP_1 completed '$(date)
 fi
 
 if [ -s $OUT.vqslod_cutoff ]; then
@@ -333,21 +310,21 @@ fi
 
 # Basic sample-wise quality control
 if [ "$SPL_QC" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to do basic sample-wise quality control'
+  echo >&2 $SLURM_JOB_NAME': begin to do basic sample-wise quality control '$(date)
   echo $'#SeqID\tReason' > $OUT.sample_rm
 
   # Sample-wise QC Filters. 
-  if [ "$AvDP_Cut" != 0 ]; then awk '($15!=-1)&&($15>'$SPL_MISS')' $OUT.1st.sample_qc | grep -v ^# | cut -f 1 | sed 's/$/\tMissingRate/' >> $OUT.sample_rm; fi
-  if [ "$HeHo_Cut" != 0 ]; then awk '($16!=-1)&&($16>'$HeHo_Cut')' $OUT.1st.sample_qc | grep -v ^# | cut -f 1 | sed 's/$/\tHet\/Hom/'    >> $OUT.sample_rm; fi
-  if [ "$TiTv_Cut" != 0 ]; then awk '($18!=-1)&&($18<'$TiTv_Cut')' $OUT.1st.sample_qc | grep -v ^# | cut -f 1 | sed 's/$/\tTi\/Tv/'      >> $OUT.sample_rm; fi
-  if [ "$Conc_Cut" != 0 ]; then awk '($31!=-1)&&($31<'$Conc_Cut')' $OUT.1st.sample_qc | grep -v ^# | cut -f 1 | sed 's/$/\tConcordance/' >> $OUT.sample_rm; fi
-  if [ "$AvGQ_Cut" != 0 ]; then awk '($34!=-1)&&($34<'$AvGQ_Cut')' $OUT.1st.sample_qc | grep -v ^# | cut -f 1 | sed 's/$/\tmeanGQ/'      >> $OUT.sample_rm; fi
-  if [ "$AvDP_Cut" != 0 ]; then awk '($35!=-1)&&($35<'$AvDP_Cut')' $OUT.1st.sample_qc | grep -v ^# | cut -f 1 | sed 's/$/\tmeanDP/'      >> $OUT.sample_rm; fi
+  if [ "$AvDP_Cut" != 0 ]; then awk '($15!=-1)&&($15>'$SPL_MISS')' $OUT.1st.sample_qc |grep -v ^# |cut -f 1 |sed 's/$/\tMissingRate/' >> $OUT.sample_rm; fi
+  if [ "$HeHo_Cut" != 0 ]; then awk '($16!=-1)&&($16>'$HeHo_Cut')' $OUT.1st.sample_qc |grep -v ^# |cut -f 1 |sed 's/$/\tHet\/Hom/'    >> $OUT.sample_rm; fi
+  if [ "$TiTv_Cut" != 0 ]; then awk '($18!=-1)&&($18<'$TiTv_Cut')' $OUT.1st.sample_qc |grep -v ^# |cut -f 1 |sed 's/$/\tTi\/Tv/'      >> $OUT.sample_rm; fi
+  if [ "$Conc_Cut" != 0 ]; then awk '($31!=-1)&&($31<'$Conc_Cut')' $OUT.1st.sample_qc |grep -v ^# |cut -f 1 |sed 's/$/\tConcordance/' >> $OUT.sample_rm; fi
+  if [ "$AvGQ_Cut" != 0 ]; then awk '($32!=0) &&($34<'$AvGQ_Cut')' $OUT.1st.sample_qc |grep -v ^# |cut -f 1 |sed 's/$/\tmeanGQ/'      >> $OUT.sample_rm; fi
+  if [ "$AvDP_Cut" != 0 ]; then awk '($33!=0) &&($35<'$AvDP_Cut')' $OUT.1st.sample_qc |grep -v ^# |cut -f 1 |sed 's/$/\tmeanDP/'      >> $OUT.sample_rm; fi
 
   if [ "$SEX_QC" == yes ]; then cat $OUT.1st.sex_problem >> $OUT.sample_rm; fi
 
   # do variant-wise quality control again with bad samples removed
-  echo >&2 $SLURM_JOB_NAME': begin to do variant-wise quality control again with bad samples removed'
+  echo >&2 $SLURM_JOB_NAME': begin to do variant-wise quality control again with bad samples removed '$(date)
   my_func() { INP=$OUT.chr$1.vcf.gz SPL=$SPL PED=$PED \
               VAM=$VAM AN1=$AN1 AN2=$AN2 AN3=$AN3 AN4=$AN4 AN5=$AN5 KEEP_COMMON=$KEEP_COMMON \
               QC1="$RMS --rm-ind+=$OUT.sample_rm --log=$OUT.chr$1.qc.log.gz --nt=$QC_THREADS $QC1" \
@@ -356,7 +333,7 @@ if [ "$SPL_QC" == yes ]; then
   parallel $PRL_OPT -a $CHF my_func
   cat $OUT.chr*.for_PROV > $OUT.for_PROV && rm -f $OUT.chr*.for_PROV
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at SPL_QC'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': SPL_QC completed'
+  echo >&2 $SLURM_JOB_NAME': SPL_QC/SEX_QC completed '$(date)
 fi
 
 if [ -s $OUT.sample_rm ]; then export RMS="$RMS --rm-ind+=$OUT.sample_rm"; fi
@@ -364,13 +341,13 @@ if [ -s $OUT.sample_rm ]; then export RMS="$RMS --rm-ind+=$OUT.sample_rm"; fi
 # Mendelian inconsistency and population stratification
 if [ "$PED_QC" == yes ] || [ "$REL_QC" == yes ] || [ "$SPL_PC" == yes ]; then
   # prepare data for Mendelian inconsistency detection and principle component analysis
-  echo >&2 $SLURM_JOB_NAME': begin to prepare data for Mendelian inconsistency detection and principle component analysis'
+  echo >&2 $SLURM_JOB_NAME': begin to prepare data for Mendelian inconsistency detection and principle component analysis '$(date)
   command -v $PLINK19 >/dev/null 2>&1 || { echo >&2 $SLURM_JOB_NAME': !!! Error: PLINK 1.9 not found. Aborted at SPL_PC.'; exit 1; }
   export OTH_OPT="--rev-filt-MaxAF=0.001 --change-id --keep-unk --spl=$SPL --ped=$PED $RMS"
   # Do not use --filt-mac or --rev-filt-FdrAF. They inflate kinship coefficient, especially when sample size is small.
   vConvertVCF --id-delim : $OUT.chr*.qc.vcf.gz $OTH_OPT --add=yes --fam=$OUT.fam --no-mhc | bgzip -c > $OUT.data_a.vcf.gz
   tabix -f -p vcf $OUT.data_a.vcf.gz
-  $PLINK19    --id-delim : --vcf $OUT.data_a.vcf.gz --keep $OUT.fam.to_keep --indiv-sort file $OUT.fam.to_keep --keep-allele-order --make-bed --out $OUT.data_a
+  $PLINK19 --id-delim : --vcf $OUT.data_a.vcf.gz --keep $OUT.fam.to_keep --indiv-sort file $OUT.fam.to_keep --keep-allele-order --make-bed --out $OUT.data_a
   if [ `grep "Error: Duplicate ID" $OUT.data_a.log | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Duplicated ID in PED or SPL'; fi
   if [ `grep -i Error $OUT.data_a.log | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted before PED_QC/REL_QC/SPL_PC'; exit 1; fi
   mv $OUT.fam.to_repl $OUT.data_a.fam # restore pedigree structure and sex and affection status. The order of PID:IID should be the same.
@@ -384,7 +361,7 @@ if [ "$PED_QC" == yes ] || [ "$REL_QC" == yes ] || [ "$SPL_PC" == yes ]; then
 
   # detect Mendelian inconsistency and cryptic relatedness by KING
   if [ "$PED_QC" == yes ] || [ "$REL_QC" == yes ]; then
-    echo >&2 $SLURM_JOB_NAME': begin to detect cryptic relatedness and Mendelian inconsistency by KING'
+    echo >&2 $SLURM_JOB_NAME': begin to detect cryptic relatedness and Mendelian inconsistency by KING '$(date)
     command -v $KING >/dev/null 2>&1 || { echo >&2 $SLURM_JOB_NAME': !!! Error: KING not found. Aborted at PED_QC.'; exit 1; }
     $KING -b $OUT.data_c.bed --kinship --related --degree 2 --prefix $OUT.data_c
     if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at PED_QC'; exit 1; fi
@@ -392,18 +369,18 @@ if [ "$PED_QC" == yes ] || [ "$REL_QC" == yes ] || [ "$SPL_PC" == yes ]; then
 
   # perform principle component analysis by PLINK
   if [ "$SPL_PC" == yes ]; then
-    echo >&2 $SLURM_JOB_NAME': begin to perform principle component analysis by PLINK'
+    echo >&2 $SLURM_JOB_NAME': begin to perform principle component analysis by PLINK '$(date)
     $PLINK19 --bfile $OUT.data_c --mind 0.1 --pca --out $OUT.data_c
     vPC --spl=$SPL --eigenvec=$OUT.data_c.eigenvec --eigenval=$OUT.data_c.eigenval > $OUT.sample_pc
     if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at SPL_PC'; exit 1; fi
   fi
   
-  echo >&2 $SLURM_JOB_NAME': PED_QC/REL_QC/SPL_PC(part_1) completed'
+  echo >&2 $SLURM_JOB_NAME': PED_QC/REL_QC/SPL_PC(part_1) completed '$(date)
 fi
 
 # test the difference in #RV/sample between cases and controls, check relatedness
 if [ "$SPL_QC" == yes ] || [ "$SPL_PC" == yes ] || [ "$PED_QC" == yes ] || [ "$REL_QC" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to test the difference in #RV/sample between cases and controls, check relatedness'
+  echo >&2 $SLURM_JOB_NAME': begin to test the difference in #RV/sample between cases and controls, check relatedness '$(date)
   export QCK="$RMS"
   if [ -f $OUT.data_c.kin ] && [ -f $OUT.data_c.kin0 ]; then export QCK="--king=$OUT.data_c $QCK"; fi
   if [ "$KEEP_REL" == yes ];                            then export QCK="--kin-cutoff=0.35355 $QCK"; fi
@@ -416,15 +393,19 @@ if [ "$SPL_QC" == yes ] || [ "$SPL_PC" == yes ] || [ "$PED_QC" == yes ] || [ "$R
     echo >&2 $SLURM_JOB_NAME': !!! Aborted at PED_QC.'
     exit 1
   fi
+  if [ -s $OUT.2nd.ped_warnings ]; then
+    echo >&2 $SLURM_JOB_NAME':  !  Warning: Found pedigree warnings. Please check '$OUT.2nd.ped_warnings' for potential pedigree structure error.'
+    echo >&2 $SLURM_JOB_NAME':  !  However, the inferred genetic correlation may not be accurate for distant relatives or when the pedigree has loops.'
+  fi
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at the end of PED_QC/REL_QC/SPL_PC'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': PED_QC/REL_QC/SPL_PC(part_2) completed'
+  echo >&2 $SLURM_JOB_NAME': PED_QC/REL_QC/SPL_PC(part_2) completed '$(date)
 fi
 
 if [ -s $OUT.2nd.rel_problem ]; then export RMS="$RMS --rm-ind+=$OUT.2nd.rel_problem"; fi
 
-# Do QC again. This time add a HWE filter. Use it for array data only, where variants have higher allele frequencies. Not tested.
+# Do QC again. This time add an HWE filter. Use it for array data only, where variants have higher allele frequencies. Not tested.
 if [ "$HWTEST" == yes ] && [ -s "$OUT.sample_pc" ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to do quality control again with HWE test'
+  echo >&2 $SLURM_JOB_NAME': begin to do quality control again with HWE test '$(date)
   vPC --spl=$SPL --pc=$OUT.sample_pc > $OUT.sample_hw
   my_func() { INP=$OUT.chr$1.vcf.gz SPL=$OUT.sample_hw PED=$PED \
               VAM=$VAM AN1=$AN1 AN2=$AN2 AN3=$AN3 AN4=$AN4 AN5=$AN5 KEEP_COMMON=$KEEP_COMMON \
@@ -434,13 +415,13 @@ if [ "$HWTEST" == yes ] && [ -s "$OUT.sample_pc" ]; then
   parallel $PRL_OPT -a $CHF my_func
   cat $OUT.chr*.for_PROV > $OUT.for_PROV && rm -f $OUT.chr*.for_PROV
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at HWTEST'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': HWTEST completed'
+  echo >&2 $SLURM_JOB_NAME': HWTEST completed '$(date)
 fi
 
 # do genotype imputation
 export STEP2_INPUT=qc
 if [ "$IMPUTE" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to do genotype imputation'
+  echo >&2 $SLURM_JOB_NAME': begin to do genotype imputation '$(date)
   if [ ! -s "$IM2.chr1.mrg.qc.vcf.gz" ]; then
     export OTH_OPT="--filt-mac=10 --rev-filt-FdrAF=0.01 --rev-filt-MaxAF=0.005 --change-id --keep-unk --spl=$SPL --ped=$PED $RMS"
     vConvertVCF $OUT.chr*.qc.vcf.gz $OTH_OPT --add=no | bgzip -c > $OUT.com.vcf.gz && tabix -f -p vcf $OUT.com.vcf.gz
@@ -475,13 +456,13 @@ if [ "$IMPUTE" == yes ]; then
     fi
   fi
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at IMPUTE'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': IMPUTE completed'
+  echo >&2 $SLURM_JOB_NAME': IMPUTE completed '$(date)
 fi
 if ls $OUT.chr*.mrg.qc.vcf.gz 1>/dev/null 2>&1; then export STEP2_INPUT=mrg.qc; fi
 
 # Step 2: annotate functional consequence, fill in missing PROVEAN, and compute BayesDel scores
 if [ "$STEP_2" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to annotate functional consequence, fill in missing PROVEAN, and compute BayesDel scores'
+  echo >&2 $SLURM_JOB_NAME': begin to annotate functional consequence, fill in missing PROVEAN, and compute BayesDel scores '$(date)
 
   # Compute PROVEAN
   if [ -s $OUT.for_PROV ] && [ "$PVN" == "" ] && [ ! -s $OUT.for_PROV.ann.gz ]; then
@@ -496,10 +477,10 @@ if [ "$STEP_2" == yes ]; then
         bgzip -f $OUT.for_PROV.ann
         tabix -f -p vcf $OUT.for_PROV.ann.gz
       fi
-      echo >&2 $SLURM_JOB_NAME': PROVEAN_annotation(STEP_2_part_1) completed'
+      echo >&2 $SLURM_JOB_NAME': PROVEAN_annotation(STEP_2_part_1) completed '$(date)
     else
       cut -f 1 $OUT.for_PROV > $PRFX.provean.tmp && mv $PRFX.provean.tmp $OUT.for_PROV
-      echo >&2 $SLURM_JOB_NAME': Please calculate PROVEAN scores for variants in $OUT.for_PROV at http://provean.jcvi.org/, save the condensed result file'
+      echo >&2 $SLURM_JOB_NAME': Please calculate PROVEAN for variants in $OUT.for_PROV at http://provean.jcvi.org/, save the condensed result file'
       echo >&2 $SLURM_JOB_NAME': as xxx.result.one.tsv, set PVN=xxx.result.one.tsv in "Main Parameters", and then do STEP_2 and beyond.'
       rm -f $PRFX*
       echo '# '$(date) > $JOB_LOG.stop
@@ -526,12 +507,12 @@ if [ "$STEP_2" == yes ]; then
   fi
 
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP_2'; exit 1; fi
-  echo >&2 $SLURM_JOB_NAME': STEP_2 completed'
+  echo >&2 $SLURM_JOB_NAME': STEP_2 completed '$(date)
 fi
 
 # Step 2.b: report incidental findings
 if [ "$STEP2B" == yes ]; then
-  echo >&2 $SLURM_JOB_NAME': begin to do variant-wise quality control again for incidental finding reports'
+  echo >&2 $SLURM_JOB_NAME': begin to do variant-wise quality control again for incidental finding reports '$(date)
   export RELAXED_QC="--filt-vqs-snv=-inf --filt-vqs-indel=-inf --filt-miss-rate=1 --filt-miss-pv=0"
   export RELAXED_QC="$RELAXED_QC --filt-discord=0 --filt-hwe-pv=0 --filt-Mendelian=0 --filt-de-novo=0 --filt-hh=0"
   head -1 $SPL > $OUT.incidental.spl
@@ -544,168 +525,73 @@ if [ "$STEP2B" == yes ]; then
   export -f my_func
   parallel $PRL_OPT -a $CHF my_func
 
-  echo >&2 $SLURM_JOB_NAME': begin to annotate functional consequence again for incidental finding reports'
+  echo >&2 $SLURM_JOB_NAME': begin to annotate functional consequence again for incidental finding reports '$(date)
   my_func() { INP=$OUT.if.chr$1.qc.vcf.gz PROV_FILL_MS=$PVN VAG="--log=$OUT.if.chr$1.qc.ann.log.gz --prefer=panel_incidental $VAG" DEL=$DEL \
               PHASING=no NO_PERCH=yes USE_TABIX=$USE_TABIX victor_by_chr; }
   export -f my_func
   parallel $PRL_OPT -a $CHF my_func
 
-  echo >&2 $SLURM_JOB_NAME': begin to search for incidental findings'
+  echo >&2 $SLURM_JOB_NAME': begin to search for incidental findings '$(date)
   my_func() { INP=$OUT.if.chr$1.qc.ann.del.gz SPL=$OUT.incidental.spl PED="" \
               AAA="$RMS $AAA --filt-MaxAF=0.05 --filt-FdrAF=0 --filt-del=-inf --detail --show-if" SEG="" FIN="" victor_by_chr; }
   export -f my_func
   parallel $PRL_OPT -a $CHF my_func
 
-  echo >&2 $SLURM_JOB_NAME': begin to merge findings from different chromosomes'
+  echo >&2 $SLURM_JOB_NAME': begin to merge findings from different chromosomes '$(date)
   grep '#CHROM' `/bin/ls $OUT.if.chr*.perch.txt | head -1` > $OUT.incidental
   cat $OUT.if.chr*.perch.txt | grep -v '#CHROM' >> $OUT.incidental
   rm $OUT.if.chr*
   if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP2B'; exit 1; fi
 
-  echo >&2 $SLURM_JOB_NAME': STEP2B completed'
+  echo >&2 $SLURM_JOB_NAME': STEP2B completed '$(date)
 fi
 
-# PERCH analysis
-for (( x = 0 ; x < ${#SUB_NAME[@]} ; x++ )); do
+# ----------------------------------------------------------------- parameters_section_2/2 -----------------------------------------------------------------
 
-  # Step 3: conduct gene- or variant-based analyses
-  if [ "$STEP_3" == yes ]; then
-    echo >&2 $SLURM_JOB_NAME': begin to conduct PERCH analyses'
+# PERCH files (each analysis has different Sample / Pedigree / GBA File with corresponding AAA2 / SEG2 parameters).
+# If you have different $SPL,$PED between QC and PERCH analysis, change the $SPL2,$PED2 below. If you have more than one analysis, add SUP_I.
+# If the files for QC and files for analysis are the same, you don't need to change anything.
 
-    for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
+for (( SUP_I = 1 ; SUP_I <= 1 ; SUP_I++ )); do
 
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == combined ]; then VAAA_OPT[$i]="${VAAA_OPT[$i]} --do-nothing"; fi
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == varRank  ]; then VAAA_OPT[$i]="${VAAA_OPT[$i]} --do-nothing"; fi
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == burden   ]; then continue; fi
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == collapse ]; then continue; fi
-
-      export THIS_SPL="${SPL_FILE[$i]}"
-      export THIS_PED="${PED_FILE[$i]}"
-      export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
-      export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
-      export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]}"
-
-      if [ -s "$OUT.sample_pc" ]; then
-        vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
-        export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
-      else
-        cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
-      fi
-      if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
-
-      # set removed samples
-      export THIS_AAA="$RMS $THIS_AAA"
-      export THIS_SEG="$RMS $THIS_SEG"
-
-      # do analysis with parallelism by chromosome
-      my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED AAA=$THIS_AAA SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
-      export -f my_func
-      parallel $PRL_OPT -a $CHF my_func
-
-      # merge results from all chromosomes into one file
-      grep '#CHROM' `/bin/ls $OUT.chr*.perch.txt | head -1` > $OUT.results_${RUN_NAME[$i]}
-      cat $OUT.chr*.perch.txt | grep -v '#CHROM' | sort -k 4,4 -r -g >> $OUT.results_${RUN_NAME[$i]}
-      rm $OUT.*.perch.txt $OUT.*.perch.gz
-    done
-
-    if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP_3'; exit 1; fi
-    echo >&2 $SLURM_JOB_NAME': STEP_3 completed'
+  if   [ "$SUP_I" == 1 ]; then
+    export SPL2="$SPL"
+    export PED2="$PED"
+    export AAA2="$AAA"
+    export SEG2="$SEG"
+    export GBA=$GBA
+    export SUP_N=""
   fi
 
-  # Step 4.a: conduct gene set analyses
-  if [ "$STEP4A" == yes ]; then
-    echo >&2 $SLURM_JOB_NAME': begin to conduct gene set analyses'
+  # PERCH Parameters. All arrays have the same number of items. Each column is a set of parameters for one analysis. You can add / remove / modify a column.
+  export RUN_NAME=( combined       burden            detail                     collapse           varRank                   )
+  export SPL_FILE=( "$SPL2"        "$SPL2"           "$SPL2"                    "$SPL2"            "$SPL2"                   )
+  export PED_FILE=( "$PED2"        ""                ""                         ""                 "$PED2"                   )
+  export VAAA_OPT=( "$AAA2"        "$AAA2 --out-mlp" "$AAA2 --detail --show-id" "$AAA2 --collapse" "$AAA2 --single"          )
+  export VSEG_OPT=( "$SEG2"        ""                ""                         ""                 "$SEG2 --single"          )
+  export VFIN_OPT=( "$FIN"         "$FIN"            "$FIN"                     "$FIN"             "$FIN --vc --prior=0.005" )
+  
+  # PERCH sub-analysis. All arrays have the same number of items. Each column is a set of parameters for one analysis. You can add / remove / modify a column.
+  export SUB_NAME=( default  lof_only      dom_neg      )
+  export SUB_PARS=( ""       "--lof-only"  "--dom-neg"  )
 
-    if [ ! -s $OUT.results_detail ]; then echo >&2 $SLURM_JOB_NAME': !!! $OUT.results_detail not found. Aborted at STEP4A.'; exit 1; fi
+# -------------------------------------------------------------------- end_of_section2/2 --------------------------------------------------------------------
 
-    export NT_BY_CPU=`echo $((NCPU-2>1?NCPU-2:1))`
-    export GENE_SETS=GeneSet_BF_p.gmt,GeneSet_hgnc_fam.gmt,GeneSet_bi_fam.gmt,GeneSet_MSigDB_lt50.gmt
-    export PATHWAYS=GeneSet_hgnc_fam.gmt,GeneSet_bi_fam.gmt,GeneSet_MSigDB_lt50.gmt
-    vGrp $OUT.chr*.$STEP2_INPUT.ann.del.gz --gene-set=$GENE_SETS --collapse=$OUT.results_detail --invo-gba-file=$GBA $GSA --prefix $OUT.gsa.var --nt=$NT_BY_CPU
-
-    for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
-
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == combined ]; then VAAA_OPT[$i]="${VAAA_OPT[$i]} --do-nothing"; fi
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == varRank  ]; then VAAA_OPT[$i]="${VAAA_OPT[$i]} --do-nothing"; fi
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == burden   ]; then continue; fi
-      if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == collapse ]; then continue; fi
-
-      if [ "${RUN_NAME[$i]}" == combined ]; then continue; fi
-      if [ "${RUN_NAME[$i]}" == varRank ]; then continue; fi
-      if [ "${RUN_NAME[$i]}" == detail ]; then continue; fi
-
-      export THIS_SPL="${SPL_FILE[$i]}"
-      export THIS_PED="${PED_FILE[$i]}"
-      export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
-      export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
-      export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]} --per-gene=$OUT.results_${RUN_NAME[$i]} --gene-set=$PATHWAYS --show-genes"
-      export THIS_RES="$OUT.gsa.results_${RUN_NAME[$i]}"
-
-      if [ -s "$OUT.sample_pc" ]; then
-        vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
-        export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
-      else
-        cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
-      fi
-      if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
-
-      # set removed samples
-      export THIS_AAA="$RMS --spl=$THIS_SPL $THIS_AAA"
-      export THIS_SEG="$RMS --ped=$THIS_PED $THIS_SEG"
-
-      # write code
-      rm -f $OUT.gsa.options
-      for (( j = 1 ; j <= $NT_BY_CPU ; j++ )); do
-        echo "$OUT.gsa.var.$j $THIS_AAA"$'\t'"$THIS_FIN"$'\t'"$THIS_RES.$j" >> $OUT.gsa.options
-      done
-      my_func() { vAAA2 $1 --gtp=$OUT.chr@.$STEP2_INPUT.vcf.gz --group=GeneSet | vFIN $2 --group=GeneSet > $3; }
-      export -f my_func
-      parallel -a $OUT.gsa.options --colsep '\t' my_func
-      grep '#CHROM' $THIS_RES.1 > $THIS_RES
-      grep -v '#CHROM' $THIS_RES.* | sort -k 4,5 -r -g >> $THIS_RES
-      rm -f $OUT.gsa.options $THIS_RES.*
-    done
-
-    head -10000 $OUT.gsa.var.1 | grep ^# > $OUT.gsa.var
-    cat $OUT.gsa.var.* | grep -v ^# >> $OUT.gsa.var
-    rm $OUT.gsa.var.*
-    gzip $OUT.gsa.var
-
-    if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP4A'; exit 1; fi
-    echo >&2 $SLURM_JOB_NAME': STEP4A completed'
-  fi
-
-  # Step 4.b: PERCH gene- or variant-based analysis after removing samples who carry variants in known high-penetrance genes
-  if [ "$STEP4B" == yes ]; then
-
-    echo >&2 $SLURM_JOB_NAME': begin to conduct PERCH analyses after removing samples who carry variants in known high-penetrance genes'
-
-    if [ ! -s $OUT.incidental ]; then echo >&2 $SLURM_JOB_NAME': !!! $OUT.incidental not found. Aborted at STEP4B.'; exit 1; fi
-
-    rm -f $OUT.sample_rm_byHPG
-    if [ "$HPG" != "" ]; then
-      IFS=, read -r -a GENES <<< "$HPG"
-      for GENE in ${GENES[@]}; do
-        grep $'\t'"$GENE"$'\t' $OUT.incidental | awk '{print $8,$5}' | tr = '\t' | tr ' ' '\t' | cut -f 1,4 >> $OUT.sample_rm_byHPG
-      done
-    else
-      sed 1d $OUT.incidental | awk '{print $8,$5}' | tr = '\t' | tr ' ' '\t' | cut -f 1,4 >> $OUT.sample_rm_byHPG
-    fi
-
-    if [ -s $OUT.sample_rm_byHPG ]; then
+  # PERCH analysis
+  for (( x = 0 ; x < ${#SUB_NAME[@]} ; x++ )); do
+  
+    # Step 3: conduct gene- or variant-based analyses
+    if [ "$STEP_3" == yes ]; then
+      echo >&2 $SLURM_JOB_NAME': begin to conduct PERCH analyses '$(date)
+  
       for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
-
-        if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == combined ]; then VAAA_OPT[$i]="${VAAA_OPT[$i]} --do-nothing"; fi
-        if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == varRank  ]; then VAAA_OPT[$i]="${VAAA_OPT[$i]} --do-nothing"; fi
-        if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == burden   ]; then continue; fi
-        if [ "$CASE_ONLY" == yes ] && [ "${RUN_NAME[$i]}" == collapse ]; then continue; fi
-
+  
         export THIS_SPL="${SPL_FILE[$i]}"
         export THIS_PED="${PED_FILE[$i]}"
         export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
         export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
         export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]}"
-
+  
         if [ -s "$OUT.sample_pc" ]; then
           vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
           export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
@@ -713,100 +599,228 @@ for (( x = 0 ; x < ${#SUB_NAME[@]} ; x++ )); do
           cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
         fi
         if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
-
+  
         # set removed samples
-        export THIS_AAA="$RMS --rm-ind+=$OUT.sample_rm_byHPG $THIS_AAA"
-        export THIS_SEG="$RMS --rm-ind+=$OUT.sample_rm_byHPG $THIS_SEG"
-
+        export THIS_AAA="$RMS $THIS_AAA"
+        export THIS_SEG="$RMS $THIS_SEG"
+  
         # do analysis with parallelism by chromosome
         my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED AAA=$THIS_AAA SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
         export -f my_func
         parallel $PRL_OPT -a $CHF my_func
-
+  
         # merge results from all chromosomes into one file
-        grep '#CHROM' `/bin/ls $OUT.chr*.perch.txt | head -1` > $OUT.rmHPG.${RUN_NAME[$i]}
-        cat $OUT.chr*.perch.txt | grep -v '#CHROM' | sort -k 4,4 -r -g >> $OUT.rmHPG.${RUN_NAME[$i]}
+        grep '#CHROM' `/bin/ls $OUT.chr*.perch.txt | head -1` > $OUT.results_${RUN_NAME[$i]}
+        cat $OUT.chr*.perch.txt | grep -v '#CHROM' | sort -k 4,4 -r -g >> $OUT.results_${RUN_NAME[$i]}
         rm $OUT.*.perch.txt $OUT.*.perch.gz
       done
+  
+      if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP_3'; exit 1; fi
+      echo >&2 $SLURM_JOB_NAME': STEP_3 completed '$(date)
     fi
-
-    if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP4B'; exit 1; fi
-    echo >&2 $SLURM_JOB_NAME': STEP4B completed'
-  fi
-
-  # Step 4.c: PERCH with ExAC_nonTCGA (not recommended)
-  if [ "$STEP4C" == yes ]; then
-
-    echo >&2 $SLURM_JOB_NAME': begin to conduct PERCH analyses with ExAC_nonTCGA'
-
-    cat $CHF | grep -v Y | grep -v M > $OUT.ExAC.chr
-
-    for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
-
-      if [ "${RUN_NAME[$i]}" == varRank ]; then continue; fi
-      if [ "${RUN_NAME[$i]}" == detail ]; then export DO_EXAC_LOG=yes; fi
-
-      export THIS_SPL="${SPL_FILE[$i]}"
-      export THIS_PED="${PED_FILE[$i]}"
-      export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
-      export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
-      export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]}"
-
-      if [ -s "$OUT.sample_pc" ]; then
-        vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
-        export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
+  
+    # Step 4.a: conduct gene set analyses
+    if [ "$STEP4A" == yes ]; then
+      echo >&2 $SLURM_JOB_NAME': begin to conduct gene set analyses '$(date)
+  
+      if [ ! -s $OUT.results_detail ]; then echo >&2 $SLURM_JOB_NAME': !!! $OUT.results_detail not found. Aborted at STEP4A.'; exit 1; fi
+  
+      export NT_BY_CPU=`echo $((NCPU-2>1?NCPU-2:1))`
+      export GENE_SETS=GeneSet_BF_p.gmt,GeneSet_hgnc_fam.gmt,GeneSet_bi_fam.gmt,GeneSet_MSigDB_lt50.gmt
+      export PATHWAYS=GeneSet_hgnc_fam.gmt,GeneSet_bi_fam.gmt,GeneSet_MSigDB_lt50.gmt
+      vGrp $OUT.chr*.$STEP2_INPUT.ann.del.gz --gene-set=$GENE_SETS --collapse=$OUT.results_detail --invo-gba-file=$GBA $GSA \
+           --prefix $OUT.gsa.var --nt=$NT_BY_CPU
+  
+      for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
+  
+        if [ "${RUN_NAME[$i]}" == combined ]; then continue; fi
+        if [ "${RUN_NAME[$i]}" == varRank ]; then continue; fi
+        if [ "${RUN_NAME[$i]}" == detail ]; then continue; fi
+  
+        export THIS_SPL="${SPL_FILE[$i]}"
+        export THIS_PED="${PED_FILE[$i]}"
+        export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
+        export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
+        export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]} --per-gene=$OUT.results_${RUN_NAME[$i]} --gene-set=$PATHWAYS --show-genes"
+        export THIS_RES="$OUT.gsa.results_${RUN_NAME[$i]}"
+  
+        if [ -s "$OUT.sample_pc" ]; then
+          vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
+          export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
+        else
+          cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
+        fi
+        if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
+  
+        # set removed samples
+        export THIS_AAA="$RMS --spl=$THIS_SPL $THIS_AAA"
+        export THIS_SEG="$RMS --ped=$THIS_PED $THIS_SEG"
+  
+        # write code
+        rm -f $OUT.gsa.options
+        for (( j = 1 ; j <= $NT_BY_CPU ; j++ )); do
+          echo "$OUT.gsa.var.$j $THIS_AAA"$'\t'"$THIS_FIN"$'\t'"$THIS_RES.$j" >> $OUT.gsa.options
+        done
+        my_func() { vAAA2 $1 --gtp=$OUT.chr@.$STEP2_INPUT.vcf.gz --group=GeneSet | vFIN $2 --group=GeneSet > $3; }
+        export -f my_func
+        parallel -a $OUT.gsa.options --colsep '\t' my_func
+        grep '#CHROM' $THIS_RES.1 > $THIS_RES
+        grep -v '#CHROM' $THIS_RES.* | sort -k 4,5 -r -g >> $THIS_RES
+        rm -f $OUT.gsa.options $THIS_RES.*
+      done
+  
+      head -10000 $OUT.gsa.var.1 | grep ^# > $OUT.gsa.var
+      cat $OUT.gsa.var.* | grep -v ^# >> $OUT.gsa.var
+      rm $OUT.gsa.var.*
+      gzip $OUT.gsa.var
+  
+      if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP4A'; exit 1; fi
+      echo >&2 $SLURM_JOB_NAME': STEP4A completed '$(date)
+    fi
+  
+    # Step 4.b: PERCH gene- or variant-based analysis after removing samples who carry variants in known high-penetrance genes
+    if [ "$STEP4B" == yes ]; then
+  
+      echo >&2 $SLURM_JOB_NAME': begin to conduct PERCH analyses after removing samples who carry variants in known high-penetrance genes '$(date)
+  
+      if [ ! -s $OUT.incidental ]; then echo >&2 $SLURM_JOB_NAME': !!! $OUT.incidental not found. Aborted at STEP4B.'; exit 1; fi
+  
+      rm -f $OUT.sample_rm_byHPG
+      if [ "$HPG" != "" ]; then
+        IFS=, read -r -a GENES <<< "$HPG"
+        for GENE in ${GENES[@]}; do
+          grep $'\t'"$GENE"$'\t' $OUT.incidental | awk '{print $8,$5}' | tr = '\t' | tr ' ' '\t' | cut -f 1,4 >> $OUT.sample_rm_byHPG
+        done
       else
-        cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
+        sed 1d $OUT.incidental | awk '{print $8,$5}' | tr = '\t' | tr ' ' '\t' | cut -f 1,4 >> $OUT.sample_rm_byHPG
       fi
-      if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
-
-      # set removed samples
-      export THIS_AAA="$RMS $THIS_AAA --exclude=DacExcludable.bed.gz,DukeExcludable.bed.gz $AWX"
-      export THIS_SEG="$RMS $THIS_SEG --exclude=DacExcludable.bed.gz,DukeExcludable.bed.gz"
-
-      # do analysis with parallelism by chromosome
-      if [ "$DO_EXAC_LOG" == yes ]; then
-        my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED \
-                    AAA="$THIS_AAA --xct-log=$OUT.chr$1.ExAC.log --xct-pfx=$EFP.chr$1,$OUT.chr$1,$COV.chr$1" \
-                    SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
-      else
-        my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED \
-                    AAA="$THIS_AAA --xct-pfx=$EFP.chr$1,$OUT.chr$1,$COV.chr$1" \
-                    SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
+  
+      if [ -s $OUT.sample_rm_byHPG ]; then
+        for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
+  
+          export THIS_SPL="${SPL_FILE[$i]}"
+          export THIS_PED="${PED_FILE[$i]}"
+          export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
+          export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
+          export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]}"
+  
+          if [ -s "$OUT.sample_pc" ]; then
+            vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
+            export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
+          else
+            cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
+          fi
+          if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
+  
+          # set removed samples
+          export THIS_AAA="$RMS --rm-ind+=$OUT.sample_rm_byHPG $THIS_AAA"
+          export THIS_SEG="$RMS --rm-ind+=$OUT.sample_rm_byHPG $THIS_SEG"
+  
+          # do analysis with parallelism by chromosome
+          my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED AAA=$THIS_AAA SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
+          export -f my_func
+          parallel $PRL_OPT -a $CHF my_func
+  
+          # merge results from all chromosomes into one file
+          grep '#CHROM' `/bin/ls $OUT.chr*.perch.txt | head -1` > $OUT.rmHPG.${RUN_NAME[$i]}
+          cat $OUT.chr*.perch.txt | grep -v '#CHROM' | sort -k 4,4 -r -g >> $OUT.rmHPG.${RUN_NAME[$i]}
+          rm $OUT.*.perch.txt $OUT.*.perch.gz
+        done
       fi
-      export -f my_func
-      parallel $PRL_OPT -a $OUT.ExAC.chr my_func
-
-      # merge results from all chromosomes into one file
-      grep '#CHROM' `/bin/ls $OUT.chr*.perch.txt | head -1` > $OUT.ExAC.results_${RUN_NAME[$i]}
-      cat $OUT.chr*.perch.txt | grep -v '#CHROM' | sort -k 4,4 -r -g >> $OUT.ExAC.results_${RUN_NAME[$i]}
-      rm $OUT.*.perch.txt $OUT.*.perch.gz
-      if [ "$DO_EXAC_LOG" == yes ]; then
-        echo "Gene Variant Log" | tr ' ' '\t' > $OUT.ExAC.log
-        cat $OUT.chr*.ExAC.log >> $OUT.ExAC.log
-        rm $OUT.chr*.ExAC.log
+  
+      if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP4B'; exit 1; fi
+      echo >&2 $SLURM_JOB_NAME': STEP4B completed '$(date)
+    fi
+  
+    # Step 4.c: PERCH with ExAC_nonTCGA (not recommended)
+    if [ "$STEP4C" == yes ]; then
+  
+      echo >&2 $SLURM_JOB_NAME': begin to conduct PERCH analyses with ExAC_nonTCGA '$(date)
+  
+      cat $CHF | grep -v Y | grep -v M > $OUT.ExAC.chr
+  
+      for (( i = 0 ; i < ${#RUN_NAME[@]} ; i++ )); do
+  
+        if [ "${RUN_NAME[$i]}" == varRank ]; then continue; fi
+        if [ "${RUN_NAME[$i]}" == detail ]; then export DO_EXAC_LOG=yes; fi
+  
+        export THIS_SPL="${SPL_FILE[$i]}"
+        export THIS_PED="${PED_FILE[$i]}"
+        export THIS_AAA="${VAAA_OPT[$i]} ${SUB_PARS[$x]}"
+        export THIS_SEG="${VSEG_OPT[$i]} ${SUB_PARS[$x]}"
+        export THIS_FIN="--biol=$GBA ${VFIN_OPT[$i]}"
+  
+        if [ -s "$OUT.sample_pc" ]; then
+          vPC --spl=$THIS_SPL --pc=$OUT.sample_pc > $OUT.samples.${RUN_NAME[$i]}
+          export THIS_SPL=$OUT.samples.${RUN_NAME[$i]}
+        else
+          cp $THIS_SPL $OUT.samples.${RUN_NAME[$i]}
+        fi
+        if [ -s "$THIS_PED" ]; then cp $THIS_PED $OUT.pedigrees.${RUN_NAME[$i]}; fi
+  
+        # set removed samples
+        export THIS_AAA="$RMS $THIS_AAA --exclude=DacExcludable.bed.gz,DukeExcludable.bed.gz $AWX"
+        export THIS_SEG="$RMS $THIS_SEG --exclude=DacExcludable.bed.gz,DukeExcludable.bed.gz"
+  
+        # do analysis with parallelism by chromosome
+        if [ "$DO_EXAC_LOG" == yes ]; then
+          my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED \
+                      AAA="$THIS_AAA --xct-log=$OUT.chr$1.ExAC.log --xct-pfx=$EFP.chr$1,$OUT.chr$1,$COV.chr$1" \
+                      SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
+        else
+          my_func() { INP=$OUT.chr$1.$STEP2_INPUT.ann.del.gz SPL=$THIS_SPL PED=$THIS_PED \
+                      AAA="$THIS_AAA --xct-pfx=$EFP.chr$1,$OUT.chr$1,$COV.chr$1" \
+                      SEG=$THIS_SEG FIN=$THIS_FIN PMT=$PMT victor_by_chr; }
+        fi
+        export -f my_func
+        parallel $PRL_OPT -a $OUT.ExAC.chr my_func
+  
+        # merge results from all chromosomes into one file
+        grep '#CHROM' `/bin/ls $OUT.chr*.perch.txt | head -1` > $OUT.ExAC.results_${RUN_NAME[$i]}
+        cat $OUT.chr*.perch.txt | grep -v '#CHROM' | sort -k 4,4 -r -g >> $OUT.ExAC.results_${RUN_NAME[$i]}
+        rm $OUT.*.perch.txt $OUT.*.perch.gz
+        if [ "$DO_EXAC_LOG" == yes ]; then
+          echo "Gene Variant Log" | tr ' ' '\t' > $OUT.ExAC.log
+          cat $OUT.chr*.ExAC.log >> $OUT.ExAC.log
+          rm $OUT.chr*.ExAC.log
+        fi
+  
+      done
+      if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP4C'; exit 1; fi
+  
+      echo >&2 $SLURM_JOB_NAME': STEP4C completed '$(date)
+    fi
+    
+    # significant results
+    for F in *.results_burden; do
+      if [[ $F == *ExAC* ]]; then continue; fi
+      NTESTS=`sed 1d $F | wc -l`
+      CUTOFF=`echo "-l(0.05/$NTESTS)/l(10)" | bc -l`
+      NSIGF=`sed 1d $F | awk '($4>'$CUTOFF')' | wc -l`
+      if [ "$NSIGF" -gt 0 ]; then
+        echo '### '$JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/$F >> $JOB_LOG.sig
+        head -1 $F >> $JOB_LOG.sig
+        sed 1d $F | awk '($4>'$CUTOFF')' >> $JOB_LOG.sig
+        echo -------------------------------------------------------------------------------- >> $JOB_LOG.sig
       fi
-
     done
-    if [ `grep -i "$ERROR_TEXT" $JOB_LOG.stderr | wc -l` -gt 0 ]; then echo >&2 $SLURM_JOB_NAME': !!! Aborted at STEP4C'; exit 1; fi
-
-    echo >&2 $SLURM_JOB_NAME': STEP4C completed'
-  fi
-
-  # copy results
-  mkdir -p $JOB_LOG.results/${SUB_NAME[$x]}/
-  if [ -f $OUT.2nd.rel_problem ]; then      cp $OUT.2nd.rel_problem $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.sample_*    1>/dev/null 2>&1; then cp $OUT.sample_*    $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.samples.*   1>/dev/null 2>&1; then mv $OUT.samples.*   $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.pedigrees.* 1>/dev/null 2>&1; then mv $OUT.pedigrees.* $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.results_*   1>/dev/null 2>&1; then mv $OUT.results_*   $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.gsa.*       1>/dev/null 2>&1; then mv $OUT.gsa.*       $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.rmHPG.*     1>/dev/null 2>&1; then mv $OUT.rmHPG.*     $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-  if ls $OUT.ExAC.*      1>/dev/null 2>&1; then mv $OUT.ExAC.*      $JOB_LOG.results/${SUB_NAME[$x]}/; fi
-
+    
+    # copy results                                                                                                                                                                                           
+    mkdir -p $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/
+    if [ -f $OUT.2nd.rel_problem ]; then      cp $OUT.2nd.rel_problem $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.sample_*    1>/dev/null 2>&1; then cp $OUT.sample_*    $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.samples.*   1>/dev/null 2>&1; then mv $OUT.samples.*   $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.pedigrees.* 1>/dev/null 2>&1; then mv $OUT.pedigrees.* $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.results_*   1>/dev/null 2>&1; then mv $OUT.results_*   $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.gsa.*       1>/dev/null 2>&1; then mv $OUT.gsa.*       $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.rmHPG.*     1>/dev/null 2>&1; then mv $OUT.rmHPG.*     $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    if ls $OUT.ExAC.*      1>/dev/null 2>&1; then mv $OUT.ExAC.*      $JOB_LOG.results${SUP_N}/${SUB_NAME[$x]}/; fi
+    
+  done
+  
 done
 
 # All completed.
-echo >&2 $SLURM_JOB_NAME': All completed'
 rm -f $PRFX*
+echo >&2 $SLURM_JOB_NAME': All completed '$(date)
 echo '# '$(date) > $JOB_LOG.stop

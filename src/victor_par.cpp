@@ -732,7 +732,7 @@ namespace perch
 		else if (s=="1" || s=="m" || s=="male"   || s=="man"   || s=="boy")  { s="1"; return 1; }
 		else																 { s="0"; return 0; }
 	}
-	double	read_aff(string& s) // support UnknAff
+	double	read_aff(string& s, const string& default_UnknAff) // support UnknAff
 	{
 		boost::to_lower(s);
 		double res = std::numeric_limits<double>::signaling_NaN();
@@ -742,11 +742,10 @@ namespace perch
 		else if	(s=="unaffected")	res = 1;
 		else if	(s=="aff")			res = 2;
 		else if	(s=="unaff")		res = 1;
-		else read_val_gt(s,res,0.0);
+		else read_val(s,res); // prv: read_val_gt(s,res,0.0); PRO: 0 is unknown, Pedigree file needs "0", vAAA "if (DepVar)" works for both AFF and QTL. CON: 0 or negative not allowed for QTL.
 		if (!std::isnan(res) && res!=1 && res!=2) { if (flipaf) exit_error("--flip-aff does not work with QTL"); afNo12.insert(res); }
 		if (!std::isnan(res) && flipaf) { if (res==1) res=2; else if (res==2) res=1; }
-		if (!std::isnan(res)) s=ftos(res);
-		if ( std::isnan(res)) s="0";
+		if (!std::isnan(res)) s=ftos(res); else s=default_UnknAff; // "0" is compatible with read_val_gt above but not read_val.
 		return res;
 	}
 	bool is_qtl()
@@ -785,7 +784,7 @@ namespace perch
 			if (exist_element(h_pid,boost::to_lower_copy(pi[0]))) continue;
 			
 			// read affection status
-			int aff = read_aff(pi[5]);
+			int aff = read_aff(pi[5],"UnknAff");
 			if (std::isnan(aff)) continue; // skip samples with missing outcome
 			if (aff==2) ped_aff.insert(pi[1]); // make sure no "continue" before this except isnan(aff)
 			
@@ -916,7 +915,7 @@ namespace perch
 			}
 			else
 			{
-				dep = perch::read_aff(in[SplAff]);
+				dep = perch::read_aff(in[SplAff],"UnknAff");
 				if (rmUnAf && std::isnan(dep)) { elog.add(spl_wrn_1); continue; } // skip samples with missing outcome
 			}
 
@@ -950,9 +949,7 @@ namespace perch
 			}
 			
 			// update
-			if		(dep==2) h_csID.insert(in[Spl_ID]);
-			else if (dep==1) h_ctID.insert(in[Spl_ID]);
-			else			 h_ukID.insert(in[Spl_ID]);
+			//if (std::isnan(dep)) h_ukID.insert(in[Spl_ID]);
 			DepMap[in[Spl_ID]]=dep;
 		}
 		
@@ -1001,7 +998,25 @@ namespace perch
 		
 		// convert aff=1/2 to aff=0/1 for case-control data
 		if (!perch::is_qtl())
-			for (auto &i:DepMap) i.second-=1;
+		{
+			for (auto &i:DepMap)
+			{
+				if		(i.second==2)		{	h_csID.insert(i.first); i.second-=1; }
+				else if (i.second==1)		{	h_ctID.insert(i.first); i.second-=1; }
+				else if (std::isnan(i.second))	h_ukID.insert(i.first);
+				else 	exit_error("wrong affection status "+itos(i.second));
+			}
+			lns<<showl<<h_csID.size()<<" cases, "<<h_ctID.size()<<" controls, and "<<h_ukID.size()<<" UnknAff subjects read from "<<spl_in<<flush_logger;
+		}
+		else
+		{
+			double min_qtl=std::numeric_limits<double>::max();
+			for (auto &i:DepMap) if (i.second<min_qtl) min_qtl=i.second;
+			if (min_qtl<=0) { for (auto &i:DepMap) if (!std::isnan(i.second)) i.second=i.second-min_qtl+1; }
+			for (auto &i:DepMap) if (!std::isnan(i.second)) h_csID.insert(i.first);
+			lns<<showl<<h_csID.size()<<" subjects with a non-missing quantitative trait read from "<<spl_in<<flush_logger;
+			if (min_qtl<=0) lns<<showl<<"converted the quantitative trait value (v) by v=v+1-"<<min_qtl<<flush_logger;
+		}
 		
 		// make StrMap
 		if (!CovMap.empty())

@@ -16,6 +16,7 @@ OPTIONS : __PRTXTFMT_HANGING__19
  --vc              This analysis is for variant classification
  --do-nothing B    Do nothing {_Default_do_nothing}
  --out-fn Ss       output field names (for handling vAAA --detail outputs only) {_Default_out_fn}
- --gene-set Fs     Pathway files in GMT format {_Default_gene_set}
- --per-gene F      Result file from gene-wise analysis {_Default_per_gene}
+ --gene-set Fs     For gene set analysis, Pathway files in GMT format {_Default_gene_set}
+ --per-gene F      For gene set analysis, Result file from gene-wise analysis {_Default_per_gene}
  --show-genes B    For gene set analysis, output each gene symbol instead of gene set name {_Default_out_gene}
+ --gba-show S      For gene set analysis, output GBA as the S of all genes in the set (MAX/MEAN/MEDIAN) {_Default_gba_show}

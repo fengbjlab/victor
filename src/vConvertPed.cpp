@@ -83,7 +83,7 @@ int main (int argc, char * const argv[])
 			
 			// sex and aff
 			perch::read_sex(in[4]);
-			perch::read_aff(in[5]);
+			perch::read_aff(in[5],"0");
 			data.push_back(in.contents());
 		}
 		

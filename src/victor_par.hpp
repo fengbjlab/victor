@@ -99,8 +99,8 @@ namespace perch
 	std::string DBpath();
 	std::string DBname();
 	std::string	find_file(const std::string& fn);	// return new name
-	int			read_sex(std::string& input);	// standardize input and return 0=unknown 1=male 2=female
-	double		read_aff(std::string& input);	// standardize input and return >0 or nan, no 0! 2=aff 1=unaff nan=unknown. If there're other values, it's a QTL.
+	int			read_sex(std::string& input);									 // standardize input and return 0=unknown 1=male 2=female
+	double		read_aff(std::string& input, const std::string& default_UnknAff);// standardize input and return 2=aff 1=unaff nan=unknown. QTL has other values.
 	void		read_SeqID(std::string& SeqID, bool& is_proband); // IndID in a pedigree file may contain [p] but SeqID in VCF doesn't. Remove it if necessary.
 	bool		read_variable(tabular_file& in, const int field, const std::vector<std::string>& INFO, const std::string& header, double& result);
 	bool		read_variable(const std::vector<std::string>& in, const int field, const std::vector<std::string>& INFO, const std::string& header, double& result);
