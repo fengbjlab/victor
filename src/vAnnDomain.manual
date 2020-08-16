@@ -1,7 +1,0 @@
-PURPOSE : annotate protein domain
-USAGE   : __PROGRAM_NAME__ [VariantFile] [options] > modified_VariantFile
-INPUT   : GenotypeFile should be annotated with _Default_col_func and _Default_col_gene.
-OPTIONS : __PRTXTFMT_HANGING__19
- --ann FILE        Get domain data from FILE, the format of which is 4 columns with a header row: #TranscriptID AA1 AA2 Domain. The headers of the 2nd & 3rd columns could start with "AA" for amino acid positions, or "CDS" for nucleotide positions relative to translation start site, or "RNA" for nucleotide positions relative to transcription start site, or "DNA" for genomic nucleotide positions. {_Default_domain}
- --add-info B      Write annotation to INFO instead of adding a column {_Default_add_info}
- --wr STR          Variable name {_Default_wr}

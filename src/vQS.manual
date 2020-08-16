@@ -1,8 +1,0 @@
-PURPOSE : to determine the VQSLOD cutoffs for SNVs and InDels, separately
-USAGE   : __PROGRAM_NAME__ [Options] INPUT(s) > OUTPUT
-INPUT   : VQSLOD log files output by vQC --out-vqs
-OUTPUT  : Options for vQC to apply VQSLOD filters, if the calculated cutoff is not out of bound.
-OPTIONS : __PRTXTFMT_HANGING__19
- --lb D            The lower bound of the VQSLOD cutoff {_Default_lb}
- --ub D            The upper bound of the VQSLOD cutoff {_Default_ub}
- --method S        The method to calculate lower fence (kimber, 3.09sd) {_Default_method}

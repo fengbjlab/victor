@@ -1,6 +1,0 @@
-PURPOSE : __PRTXTFMT_HANGING__10 modify a VCF file
-USAGE   : __PROGRAM_NAME__ [VCF] [options] > modified_VCF
-OPTIONS : __PRTXTFMT_HANGING__19
- --restore B       vAnnGene modifies #CHROM,POS,REF,ALT for some InDels. This option restores the original values. {_Default_restore}
- --keep STRs       Keep these variables in the INFO field. {_Default_keep}
- --remove STRs     Remove these variables from the INFO field. {_Default_remove}

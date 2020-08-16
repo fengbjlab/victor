@@ -1,6 +1,0 @@
-PURPOSE: perform guilt-by-association (GBA) analysis
-USAGE  : __PROGRAM_NAME__ -s SeedFile > ScoreFile
-OPTIONS: __PRTXTFMT_HANGING__19
- --seeds/-s FILE   Read seeds from FILE (two columns: TraitName and GeneSymbol. No header line) 
- --gs              Do Gaussian Smoothing (default)
- --ic              Do InterConnectedness

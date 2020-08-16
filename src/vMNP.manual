@@ -1,3 +1,0 @@
-PURPOSE : merges consecutive variants into an MNP if they are in complete LD
-USAGE   : __PROGRAM_NAME__ phased_vcf > modified_vcf
-OPTIONS : __PRTXTFMT_HANGING__19

@@ -1,3 +1,0 @@
-This folder contains SLURM script templates for job submission to a computer cluster.
-
-slurm.all_steps uses the GNU parallel program to run analyses for multiple chromosomes on one computer node simultaneously; while slurm.step2 submits multiple jobs and run analyses for one chromosome on each computer node. As indicated by the name, slurm.step2 only runs the second step of slurm.all_steps. This step is very time consuming if you choose to do genotype phasing. Otherwise, slurm.all_steps is sufficient for all analyses in the pipeline.

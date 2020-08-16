@@ -1,9 +1,0 @@
-PURPOSE: split variants with multiple alternative alleles into separate lines
-USAGE  : __PROGRAM_NAME__ [VariantFile] [options] > modified_VariantFile
-OPTIONS: __PRTXTFMT_HANGING__19
-  -l INT           The last sample's column number (1-based, 0 = the last) {_Default_l}
-  -a CHAR          The other alternative alleles become CHAR {_Default_a}
- --ds STRs         INFO variables to be split in the direct-split mode {_Default_ds}
- --pr STRs         INFO variables to be split in the plus-reference mode {_Default_pr}
- --gc STRs         INFO variables to be split in the genotype-count mode {_Default_gc}
- --rp STRs         INFO variables to be split in the replace mode {_Default_rp}
